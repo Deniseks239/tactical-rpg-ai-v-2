@@ -330,31 +330,38 @@ static func _place_npcs(npc_configs: Array, tiles: Array, size: int) -> Array:
 static func _create_exits(exit_configs: Array, tiles: Array, size: int) -> Array:
 	var exits = []
 	for config in exit_configs:
-		var x = config.get("x", -1)
-		var y = config.get("y", -1)
-		
-		if x == -1 or y == -1:
-			var positions = _find_edge_positions(tiles, size)
-			if positions.size() > 0:
-				var pos = positions[randi() % positions.size()]
-				x = pos[0]
-				y = pos[1]
-		
-		exits.append({
-			"x": x,
-			"y": y,
-			"target_location_id": config.get("target_location_id", ""),
-			"target_door_id": config.get("target_door_id", ""),
-			"type": config.get("type", "door"),
-			"description": config.get("description", "Дверь")
-		})
-		
-		if x >= 0 and x < size and y >= 0 and y < size:
-			tiles[x][y] = TileType.FLOOR
+		# Проверяем, является ли config словарём
+		if config is Dictionary:
+			var x = config.get("x", -1)
+			var y = config.get("y", -1)
+			var target_location_id = config.get("target_location_id", "")
+			var target_door_id = config.get("target_door_id", "")
+			var exit_type = config.get("type", "door")
+			var description = config.get("description", "Дверь")
+			
+			if x == -1 or y == -1:
+				var positions = _find_edge_positions(tiles, size)
+				if positions.size() > 0:
+					var pos = positions[randi() % positions.size()]
+					x = pos[0]
+					y = pos[1]
+			
+			exits.append({
+				"x": x,
+				"y": y,
+				"target_location_id": target_location_id,
+				"target_door_id": target_door_id,
+				"type": exit_type,
+				"description": description
+			})
+			
+			if x >= 0 and x < size and y >= 0 and y < size:
+				tiles[x][y] = TileType.FLOOR
+		else:
+			# Если config не словарь (например, ["north"]), игнорируем
+			print("Предупреждение: неверный формат выхода: ", config)
 	
 	return exits
-
-# Поиск клеток у края
 static func _find_edge_positions(tiles: Array, size: int) -> Array:
 	var positions = []
 	for x in range(size):
