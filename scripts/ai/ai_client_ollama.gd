@@ -40,7 +40,7 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 
 func _build_system_prompt(context: Dictionary, additional: Dictionary, request_type: String) -> String:
 	if request_type == "description":
-		return PromptTemplates.get_description_prompt(attacker, defender, damage, is_hit)
+		# Переменные нужно брать из additional, а не из context
 		var is_hit = additional.get("is_hit", false)
 		var damage = additional.get("damage", 0)
 		var attacker = additional.get("attacker", "")
@@ -50,9 +50,9 @@ func _build_system_prompt(context: Dictionary, additional: Dictionary, request_t
 			if damage <= 0:
 				return "Опиши одной короткой фразой: " + attacker + " атакует, но не наносит урона. Максимум 10 слов."
 			else:
-				var severity = "легкий"
+				var severity = "лёгкий"
 				if damage >= 6:
-					severity = "тяжелый"
+					severity = "тяжёлый"
 				elif damage >= 4:
 					severity = "средний"
 				return "Опиши одной короткой фразой: " + attacker + " наносит " + str(damage) + " урона (" + severity + "). Максимум 12 слов."
@@ -63,7 +63,7 @@ func _build_system_prompt(context: Dictionary, additional: Dictionary, request_t
 		var defender = additional.get("defender", "враг")
 		return "Опиши одной фразой смерть " + defender + ". Максимум 15 слов."
 	
-	elif request_type == "location":
+	elif request_type == "location"::
 		return PromptTemplates.get_location_prompt()
 		# Длинный промпт для генерации локации
 		var grid_str = ""
