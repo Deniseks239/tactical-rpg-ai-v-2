@@ -195,6 +195,8 @@ func _on_cell_pressed(x: int, y: int):
 		print("Ожидание ответа AI, действия временно заблокированы")
 		game_controller.game_message.emit("Подождите, AI описывает происходящее...")
 		return
+		
+	game_controller.game_message.emit("🖱️ Обработка действия...")
 	
 	if game_controller.game_over:
 		print("Игра окончена")
@@ -270,13 +272,14 @@ func _attack(attacker_id: String, defender_id: String):
 			# Описание смерти
 			game_controller.request_death_description(killed_name)
 			return
-		
+		game_controller.game_message.emit("⚔️ Атака! AI описывает результат...")
 		game_controller.pending_action = "player_attack"
 		game_controller.request_action_description("атака", attacker["name"], defender["name"], damage, true)
 		
 		if not was_killed:
 			refresh_grid()
 	else:
+		game_controller.game_message.emit("⚔️ Атака! AI описывает результат...")
 		game_controller.pending_action = "player_attack"
 		game_controller.request_action_description("атака", attacker["name"], defender["name"], 0, false)
 	
