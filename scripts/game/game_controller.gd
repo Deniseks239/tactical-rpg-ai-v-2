@@ -294,7 +294,7 @@ func _on_ai_response(response: Dictionary):
 		
 func request_action_description(action_text: String, attacker: String, defender: String, damage: int, is_hit: bool):
 	is_waiting_for_ai = true
-	game_message.emit("AI описывает происходящее, подождите...")
+	game_message.emit("🤔 Мастер подземелий размышляет...")
 	
 	var context = {
 		"action_text": action_text,
