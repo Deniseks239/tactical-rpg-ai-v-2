@@ -175,40 +175,12 @@ func _on_ai_response(response: Dictionary):
 	
 	elif typ == "text":
 		var text = response["data"]
-		print("AI вернул текст, длина: ", text.length())
-		
-		# Пытаемся найти JSON в тексте
-		var json_start = text.find("{")
-		var json_end = text.rfind("}")
-		if json_start != -1 and json_end != -1 and json_end > json_start:
-			var json_str = text.substr(json_start, json_end - json_start + 1)
-			var json = JSON.new()
-			var parse_result = json.parse_string(json_str)
-			if parse_result is Dictionary:
-				print("JSON успешно распарсен")
-				if parse_result.get("action") == "generate_location":
-					var params = parse_result.get("parameters", {})
-					var location_manager = get_node("/root/LocationManagerAuto")
-					if location_manager:
-						var new_location = location_manager.generate_location(params)
-						location_manager.set_current_location(new_location)
-						return
-				elif parse_result.get("action") == "game_message":
-					# Выводим сообщение
-					var msg_text = parse_result.get("text", "")
-					if msg_text:
-						game_message.emit(msg_text)
-						print("AI: ", msg_text)
-				else:
-					_handle_action(parse_result)
-		
-		# Если не нашли JSON или это было просто сообщение, выводим текст
-		if text and not text.begins_with("{"):
+		if text and not text.is_empty():
 			game_message.emit(text)
 			print("AI говорит: ", text)
-		
+	
 		is_waiting_for_ai = false
-		
+	
 		# Обработка после получения ответа
 		if pending_action == "player_attack":
 			print("Атака игрока завершена (text)")
@@ -216,7 +188,7 @@ func _on_ai_response(response: Dictionary):
 			if combat_state.action_points <= 0 and not game_over:
 				print("Очки действий закончились, завершаем ход игрока")
 				end_player_turn()
-		
+	
 		elif pending_action == "enemy_turn":
 			print("Обработка хода врагов (text)")
 			if _pending_attacks.size() > 0:
@@ -229,12 +201,12 @@ func _on_ai_response(response: Dictionary):
 			else:
 				print("Все атаки врагов описаны, передаём ход игроку")
 				pending_action = ""
-				
+			
 				if combat_state.units.get("player_1", {}).get("hp", 0) <= 0:
 					game_message.emit("Арагорн повержен! Игра окончена.")
 					game_over = true
 					return
-				
+			
 				var enemies = combat_state.get_all_enemies()
 				if enemies.is_empty():
 					game_message.emit("Все враги повержены! Вы победили!")
