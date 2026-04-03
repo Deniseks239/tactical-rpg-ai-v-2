@@ -104,17 +104,15 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	if content.ends_with("```"):
 		content = content.substr(0, content.length() - 3)
 	content = content.strip_edges()
+	
+	# Исправляем двойные фигурные скобки
 	if content.begins_with("{{") and content.ends_with("}}"):
 		content = content.substr(1, content.length() - 2)
 	
 	print("Контент после очистки (первые 500 символов):\n", content.substr(0, 500))
-	# Проверяем, не обрезан ли ответ
-	var done_reason = response.get("done_reason", "")
-	if done_reason == "length":
-		print("ВНИМАНИЕ: Ответ обрезан из-за лимита длины! Пытаемся восстановить...")
-		content = _fix_incomplete_json(content)
 	
-		var parsed = JSON.parse_string(content)
+	# Пробуем распарсить JSON
+	var parsed = JSON.parse_string(content)
 	
 	if parsed is Array:
 		print("Успешно распарсено как массив: ", parsed.size(), " действий")
