@@ -8,6 +8,10 @@ const API_URL = "http://localhost:11434/api/chat"
 var model_name: String = "gemma3:4b"
 
 func send_request(messages: Array, game_context: Dictionary, additional_context: Dictionary = {}, request_type: String = "default"):
+	cancel_current_request()  # Отменяем предыдущий запрос
+	current_request = HTTPRequest.new()
+	add_child(current_request)
+	current_request.request_completed.connect(_on_request_completed.bind(current_request))
 	var system_prompt = _build_system_prompt(game_context, additional_context, request_type)
 	var ollama_messages = [{"role": "system", "content": system_prompt}] + messages
 	var http = HTTPRequest.new()
@@ -36,6 +40,7 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 
 func _build_system_prompt(context: Dictionary, additional: Dictionary, request_type: String) -> String:
 	if request_type == "description":
+		return PromptTemplates.get_description_prompt(attacker, defender, damage, is_hit)
 		var is_hit = additional.get("is_hit", false)
 		var damage = additional.get("damage", 0)
 		var attacker = additional.get("attacker", "")
@@ -59,6 +64,7 @@ func _build_system_prompt(context: Dictionary, additional: Dictionary, request_t
 		return "Опиши одной фразой смерть " + defender + ". Максимум 15 слов."
 	
 	elif request_type == "location":
+		return PromptTemplates.get_location_prompt()
 		# Длинный промпт для генерации локации
 		var grid_str = ""
 		var grid = context.get("grid", [])
@@ -170,3 +176,10 @@ func _fix_incomplete_json(content: String) -> String:
 		print("JSON восстановлен: добавлено закрывающих скобок")
 	
 	return result
+var current_request: HTTPRequest = null
+
+func cancel_current_request():
+	if current_request and current_request.is_inside_tree():
+		current_request.cancel_request()
+		current_request.queue_free()
+		current_request = null
