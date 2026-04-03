@@ -18,3 +18,4 @@ config/features=PackedStringArray("4.5", "Forward Plus")
 
 GameControllerAuto="*res://scripts/game/game_controller.gd"
 LocationManagerAuto="*res://scripts/game/location_manager.gd"
+PromptTemplates="*res://scripts/ai/prompt_templates.gd"
