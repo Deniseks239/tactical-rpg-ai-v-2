@@ -175,6 +175,34 @@ func _on_ai_response(response: Dictionary):
 	
 	elif typ == "text":
 		var text = response["data"]
+		print("AI вернул текст, длина: ", text.length())
+	
+		# Пытаемся найти JSON в тексте (только для генерации локации)
+		var json_start = text.find("{")
+		var json_end = text.rfind("}")
+		if json_start != -1 and json_end != -1 and json_end > json_start:
+			var json_str = text.substr(json_start, json_end - json_start + 1)
+			var json = JSON.new()
+			var parse_result = json.parse_string(json_str)
+			if parse_result is Dictionary:
+				print("JSON успешно распарсен")
+				if parse_result.get("action") == "generate_location":
+					var params = parse_result.get("parameters", {})
+					var location_manager = get_node("/root/LocationManagerAuto")
+					if location_manager:
+						var new_location = location_manager.generate_location(params)
+						location_manager.set_current_location(new_location)
+						return
+				else:
+					_handle_action(parse_result)
+					if pending_action == "player_attack":
+						print("Атака игрока завершена (из JSON в тексте)")
+						pending_action = ""
+						if combat_state.action_points <= 0 and not game_over:
+							end_player_turn()
+					return
+	
+		# Если не нашли JSON, выводим текст как сообщение
 		if text and not text.is_empty():
 			game_message.emit(text)
 			print("AI говорит: ", text)
@@ -186,7 +214,6 @@ func _on_ai_response(response: Dictionary):
 			print("Атака игрока завершена (text)")
 			pending_action = ""
 			if combat_state.action_points <= 0 and not game_over:
-				print("Очки действий закончились, завершаем ход игрока")
 				end_player_turn()
 	
 		elif pending_action == "enemy_turn":
