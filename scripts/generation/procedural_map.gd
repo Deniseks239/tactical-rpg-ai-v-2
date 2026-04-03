@@ -329,39 +329,26 @@ static func _place_npcs(npc_configs: Array, tiles: Array, size: int) -> Array:
 # Создание выходов (дверей)
 static func _create_exits(exit_configs: Array, tiles: Array, size: int) -> Array:
 	var exits = []
+	if not exit_configs is Array:
+		return exits
+	
 	for config in exit_configs:
-		# Проверяем, является ли config словарём
 		if config is Dictionary:
 			var x = config.get("x", -1)
 			var y = config.get("y", -1)
-			var target_location_id = config.get("target_location_id", "")
-			var target_door_id = config.get("target_door_id", "")
-			var exit_type = config.get("type", "door")
-			var description = config.get("description", "Дверь")
-			
 			if x == -1 or y == -1:
 				var positions = _find_edge_positions(tiles, size)
 				if positions.size() > 0:
 					var pos = positions[randi() % positions.size()]
 					x = pos[0]
 					y = pos[1]
-			
-			exits.append({
-				"x": x,
-				"y": y,
-				"target_location_id": target_location_id,
-				"target_door_id": target_door_id,
-				"type": exit_type,
-				"description": description
-			})
-			
+			exits.append({"x": x, "y": y, "description": config.get("description", "Дверь")})
 			if x >= 0 and x < size and y >= 0 and y < size:
 				tiles[x][y] = TileType.FLOOR
 		else:
-			# Если config не словарь (например, ["north"]), игнорируем
-			print("Предупреждение: неверный формат выхода: ", config)
-	
+			print("Предупреждение: неверный формат выхода:", config)
 	return exits
+	
 static func _find_edge_positions(tiles: Array, size: int) -> Array:
 	var positions = []
 	for x in range(size):
