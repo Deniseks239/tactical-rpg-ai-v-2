@@ -54,11 +54,13 @@ func _start_game():
 	
 	var prompt = """
 Верни ТОЛЬКО JSON. Формат:
-{"action": "generate_location", "parameters": {"location_name": "название", "description": "описание", "biome": "dungeon", "size": 16, "enemies": [{"type": "goblin", "count": 2}], "exits": [], "player_start": [8, 8]}}
-Создай простую локацию. Используй не более 2 типов врагов.
+{"action": "generate_location", "parameters": {"location_name": "название", "description": "описание", "biome": "dungeon", "size": 8, "enemies": [{"type": "goblin", "count": 2}], "exits": [], "player_start": [4, 4]}}
+Важно: exits должен быть пустым массивом [].
+Создай простую локацию. Размер 8x8. Используй не более 2 типов врагов.
 """
 	
 	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "location")
+	
 func _get_players_info() -> Array:
 	var players = []
 	for unit_id in combat_state.units.keys():
@@ -595,13 +597,16 @@ func _apply_map_data(map_data: Dictionary):
 	
 	# Размещаем выходы (двери) — визуально помечаем клетки
 	var exits = map_data.get("exits", [])
-	for exit_data in exits:
-		var x = exit_data.get("x", -1)
-		var y = exit_data.get("y", -1)
-		if x >= 0 and x < grid_state.width and y >= 0 and y < grid_state.height:
-			# Помечаем клетку как дверь (можно специальным цветом)
-			# Пока просто оставляем как пол
-			pass
+	if exits is Array:
+		for exit_data in exits:
+			if exit_data is Dictionary and exit_data.has("x") and exit_data.has("y"):
+				var x = exit_data.get("x", -1)
+				var y = exit_data.get("y", -1)
+				if x >= 0 and x < grid_state.width and y >= 0 and y < grid_state.height:
+					# Помечаем клетку как дверь
+					pass
+			else:
+				print("Пропускаем некорректный выход: ", exit_data)
 	
 	# Ждём один кадр, чтобы GridManager успел получить данные
 	await get_tree().process_frame
