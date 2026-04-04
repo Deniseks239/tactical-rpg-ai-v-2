@@ -63,7 +63,7 @@ func _build_system_prompt(context: Dictionary, additional: Dictionary, request_t
 		var defender = additional.get("defender", "враг")
 		return "Опиши одной фразой смерть " + defender + ". Максимум 15 слов."
 	
-	elif request_type == "location"::
+	elif request_type == "location":
 		return PromptTemplates.get_location_prompt()
 		# Длинный промпт для генерации локации
 		var grid_str = ""
