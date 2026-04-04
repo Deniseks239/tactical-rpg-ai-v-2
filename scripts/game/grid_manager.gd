@@ -259,22 +259,16 @@ func _attack(attacker_id: String, defender_id: String):
 	
 	print(attacker["name"], " атакует ", defender["name"], " (бросок ", roll, "+", attack_bonus, " vs AC ", ac, ") = ", "ПОПАДАНИЕ" if is_hit else "ПРОМАХ")
 	
-	var event = {
-		"type": "attack",
-		"attacker": attacker["name"],
-		"defender": defender["name"],
-		"damage": damage if is_hit else 0,
-		"is_hit": is_hit,
-		"was_killed": false
-	}
+	# Объявляем переменную damage здесь
+	var damage = 0
+	var was_killed = false
 	
 	if is_hit:
-		var damage = combat_state.calculate_damage(attacker.get("damage_dice", "1d6+2"))
+		damage = combat_state.calculate_damage(attacker.get("damage_dice", "1d6+2"))
 		defender["hp"] -= damage
-		event["damage"] = damage
+		was_killed = defender["hp"] <= 0
 		
-		if defender["hp"] <= 0:
-			event["was_killed"] = true
+		if was_killed:
 			print("Враг убит, удаляем: ", defender["name"])
 			var killed_name = defender["name"]
 			grid_state.remove_unit(defender_id)
@@ -284,7 +278,15 @@ func _attack(attacker_id: String, defender_id: String):
 		else:
 			refresh_grid()
 	
-	# Добавляем событие в очередь вместо прямого вызова AI
+	# Добавляем событие в очередь
+	var event = {
+		"type": "attack",
+		"attacker": attacker["name"],
+		"defender": defender["name"],
+		"damage": damage,
+		"is_hit": is_hit,
+		"was_killed": was_killed
+	}
 	game_controller.add_event(event)
 	
 	combat_state.spend_action_points(1)
