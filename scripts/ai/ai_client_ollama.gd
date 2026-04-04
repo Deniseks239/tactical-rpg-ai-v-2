@@ -6,6 +6,7 @@ signal error_occurred(error: String)
 
 const API_URL = "http://localhost:11434/api/chat"
 var model_name: String = "gemma3:4b"
+var PromptTemplates = preload("res://scripts/ai/prompt_templates.gd")
 
 func send_request(messages: Array, game_context: Dictionary, additional_context: Dictionary = {}, request_type: String = "default"):
 	cancel_current_request()  # Отменяем предыдущий запрос
