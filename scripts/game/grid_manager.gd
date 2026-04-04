@@ -390,12 +390,3 @@ func _enter_door(exit_data: Dictionary):
 		"previous_location": location_manager.current_location.name if location_manager.current_location else "Неизвестно",
 		"exit_description": exit_data.description
 	})
-func request_action_description(...):
-	is_waiting_for_ai = true
-	game_message.emit("🤔 Мастер подземелий размышляет...")
-	
-	# Таймаут через 10 секунд
-	await get_tree().create_timer(10.0).timeout
-	if is_waiting_for_ai:
-		game_message.emit("⏳ AI задумался... продолжаем бой")
-		is_waiting_for_ai = false
