@@ -340,11 +340,9 @@ func end_player_turn():
 	if game_over:
 		return
 	if pending_events.size() > 0:
-		pending_action = "battle_summary"
 		request_battle_summary()
 	else:
 		_proceed_to_enemy_turn()
-	_pending_attacks.clear()
 	
 	# Находим GridManager
 	var root = get_tree().current_scene
@@ -655,9 +653,11 @@ func add_event(event: Dictionary):
 func request_battle_summary():
 	if pending_events.is_empty():
 		print("Нет событий для описания")
+		_proceed_to_enemy_turn()
 		return
 	
 	is_waiting_for_ai = true
+	pending_action = "battle_summary"
 	game_message.emit("📜 Мастер подземелий подводит итог хода...")
 	
 	var context = {
