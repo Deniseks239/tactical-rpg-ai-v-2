@@ -59,6 +59,11 @@ func _build_system_prompt(context: Dictionary, additional: Dictionary, request_t
 				return "Опиши одной короткой фразой: " + attacker + " наносит " + str(damage) + " урона (" + severity + "). Максимум 12 слов."
 		else:
 			return "Опиши одной короткой фразой: " + attacker + " промахивается. Максимум 10 слов."
+
+	elif request_type == "battle_summary":
+		var events = additional.get("events", [])
+		var player_name = additional.get("player_name", "Игрок")
+		return PromptTemplates.get_battle_summary_prompt(events, player_name)
 	
 	elif request_type == "death":
 		var defender = additional.get("defender", "враг")
