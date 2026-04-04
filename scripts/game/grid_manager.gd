@@ -259,40 +259,41 @@ func _attack(attacker_id: String, defender_id: String):
 	
 	print(attacker["name"], " атакует ", defender["name"], " (бросок ", roll, "+", attack_bonus, " vs AC ", ac, ") = ", "ПОПАДАНИЕ" if is_hit else "ПРОМАХ")
 	
+	var event = {
+		"type": "attack",
+		"attacker": attacker["name"],
+		"defender": defender["name"],
+		"damage": damage if is_hit else 0,
+		"is_hit": is_hit,
+		"was_killed": false
+	}
+	
 	if is_hit:
 		var damage = combat_state.calculate_damage(attacker.get("damage_dice", "1d6+2"))
 		defender["hp"] -= damage
-		var was_killed = defender["hp"] <= 0
+		event["damage"] = damage
 		
-		if was_killed:
+		if defender["hp"] <= 0:
+			event["was_killed"] = true
 			print("Враг убит, удаляем: ", defender["name"])
 			var killed_name = defender["name"]
 			grid_state.remove_unit(defender_id)
 			combat_state.remove_unit(defender_id)
 			refresh_grid()
-			# Описание смерти
-			game_controller.request_death_description(killed_name)
-			return
-		game_controller.game_message.emit("⚔️ Атака! AI описывает результат...")
-		game_controller.pending_action = "player_attack"
-		game_controller.request_action_description("атака", attacker["name"], defender["name"], damage, true)
-		
-		if not was_killed:
+			game_controller.game_message.emit(killed_name + " повержен!")
+		else:
 			refresh_grid()
-	else:
-		game_controller.game_message.emit("⚔️ Атака! AI описывает результат...")
-		game_controller.pending_action = "player_attack"
-		game_controller.request_action_description("атака", attacker["name"], defender["name"], 0, false)
+	
+	# Добавляем событие в очередь вместо прямого вызова AI
+	game_controller.add_event(event)
 	
 	combat_state.spend_action_points(1)
 	
-	# Убираем вызов end_player_turn() здесь!
-	# Он будет вызван после получения описания от AI
 	if combat_state.action_points <= 0:
 		selected_unit_id = ""
 		_clear_highlight()
 		refresh_grid()
-		# НЕ вызываем game_controller.end_player_turn() здесь
+		game_controller.end_player_turn()
 
 func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 	var start_pos = grid_state.get_unit_position(unit_id)
