@@ -178,47 +178,27 @@ func _on_ai_response(response: Dictionary):
 	
 	elif typ == "text":
 		var text = response["data"]
-		print("AI вернул текст, длина: ", text.length())
-	
-		# Пытаемся найти JSON в тексте (только для генерации локации)
-		var json_start = text.find("{")
-		var json_end = text.rfind("}")
-		if json_start != -1 and json_end != -1 and json_end > json_start:
-			var json_str = text.substr(json_start, json_end - json_start + 1)
-			var json = JSON.new()
-			var parse_result = json.parse_string(json_str)
-			if parse_result is Dictionary:
-				print("JSON успешно распарсен")
-				if parse_result.get("action") == "generate_location":
-					var params = parse_result.get("parameters", {})
-					var location_manager = get_node("/root/LocationManagerAuto")
-					if location_manager:
-						var new_location = location_manager.generate_location(params)
-						location_manager.set_current_location(new_location)
-						return
-				else:
-					_handle_action(parse_result)
-					if pending_action == "player_attack":
-						print("Атака игрока завершена (из JSON в тексте)")
-						pending_action = ""
-						if combat_state.action_points <= 0 and not game_over:
-							end_player_turn()
-					return
-	
-		# Если не нашли JSON, выводим текст как сообщение
 		if text and not text.is_empty():
 			game_message.emit(text)
 			print("AI говорит: ", text)
-	
+		
 		is_waiting_for_ai = false
-	
+		
+		# Если это был ответ на суммарное описание хода
+		if pending_action == "battle_summary":
+			print("Суммарное описание хода получено")
+			pending_action = ""
+			clear_events()
+			_proceed_to_enemy_turn()
+			return
+		
 		# Обработка после получения ответа
 		if pending_action == "player_attack":
 			print("Атака игрока завершена (text)")
 			pending_action = ""
 			if combat_state.action_points <= 0 and not game_over:
 				end_player_turn()
-	
+		
 		elif pending_action == "enemy_turn":
 			print("Обработка хода врагов (text)")
 			if _pending_attacks.size() > 0:
@@ -231,12 +211,12 @@ func _on_ai_response(response: Dictionary):
 			else:
 				print("Все атаки врагов описаны, передаём ход игроку")
 				pending_action = ""
-			
+				
 				if combat_state.units.get("player_1", {}).get("hp", 0) <= 0:
 					game_message.emit("Арагорн повержен! Игра окончена.")
 					game_over = true
 					return
-			
+				
 				var enemies = combat_state.get_all_enemies()
 				if enemies.is_empty():
 					game_message.emit("Все враги повержены! Вы победили!")
@@ -287,12 +267,11 @@ func _on_ai_response(response: Dictionary):
 			print("Атака игрока завершена (description)")
 			pending_action = ""
 			if combat_state.action_points <= 0 and not game_over:
-				print("Очки действий закончились, завершаем ход игрока")
 				end_player_turn()
 	
 	else:
 		print("Неизвестный тип ответа: ", typ)
-		
+
 func request_action_description(action_text: String, attacker: String, defender: String, damage: int, is_hit: bool):
 	is_waiting_for_ai = true
 	game_message.emit("🤔 Мастер подземелий размышляет...")
@@ -342,8 +321,8 @@ func end_player_turn():
 	if game_over:
 		return
 	if pending_events.size() > 0:
+		pending_action = "battle_summary"
 		request_battle_summary()
-		# Очистим после получения ответа
 	else:
 		_proceed_to_enemy_turn()
 	_pending_attacks.clear()
@@ -692,14 +671,14 @@ func _proceed_to_enemy_turn():
 	combat_state.reset_action_points()
 	
 	var enemies = combat_state.get_all_enemies()
-	if debug_mode: print("Врагов перед ходом врагов: ", enemies.size())
+	print("Врагов перед ходом врагов: ", enemies.size())
 	
 	if enemies.is_empty():
 		game_message.emit("Все враги повержены! Вы победили!")
 		return
 	
 	combat_state.current_turn_index = 1
-	if debug_mode: print("current_turn_index = ", combat_state.current_turn_index)
+	print("current_turn_index = ", combat_state.current_turn_index)
 	
 	game_message.emit("Ход врагов...")
 	_simple_enemy_turn()
