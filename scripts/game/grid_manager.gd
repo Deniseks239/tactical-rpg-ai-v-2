@@ -195,8 +195,6 @@ func _on_cell_pressed(x: int, y: int):
 		print("Ожидание ответа AI, действия временно заблокированы")
 		game_controller.game_message.emit("Подождите, AI описывает происходящее...")
 		return
-		
-	game_controller.game_message.emit("🖱️ Обработка действия...")
 	
 	if game_controller.game_over:
 		print("Игра окончена")
@@ -220,6 +218,9 @@ func _on_cell_pressed(x: int, y: int):
 	if not combat_state.is_player_turn():
 		print("Сейчас ход врагов, подождите")
 		return
+	
+	# Индикатор обработки действия
+	game_controller.game_message.emit("🖱️ Обработка действия...")
 	
 	if selected_unit_id != "":
 		print("Попытка атаковать/переместить юнита: ", selected_unit_id)
