@@ -178,6 +178,25 @@ func _on_ai_response(response: Dictionary):
 	
 	elif typ == "text":
 		var text = response["data"]
+		
+		# Пытаемся найти JSON в тексте (для генерации локации)
+		var json_start = text.find("{")
+		var json_end = text.rfind("}")
+		if json_start != -1 and json_end != -1 and json_end > json_start:
+			var json_str = text.substr(json_start, json_end - json_start + 1)
+			var json = JSON.new()
+			var parse_result = json.parse_string(json_str)
+			if parse_result is Dictionary:
+				print("JSON успешно распарсен")
+				if parse_result.get("action") == "generate_location":
+					var params = parse_result.get("parameters", {})
+					print("Генерация локации с параметрами: ", params)
+					var location_manager = get_node("/root/LocationManagerAuto")
+					if location_manager:
+						var new_location = location_manager.generate_location(params)
+						location_manager.set_current_location(new_location)
+						return
+		
 		if text and not text.is_empty():
 			game_message.emit(text)
 			print("AI говорит: ", text)
