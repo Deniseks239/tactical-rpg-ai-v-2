@@ -10,6 +10,7 @@ var ai_client: AIClientOllama
 var is_waiting_for_ai: bool = false
 var pending_action: String = ""
 var game_over: bool = false
+var pending_events: Array = []  # события за ход игрока
 var _pending_attacks: Array = []
 var debug_mode: bool = true
 
@@ -335,11 +336,16 @@ func _refresh_grid():
 		grid_manager.refresh_grid()
 	else:
 		print("GridManager не найден! Проверьте структуру сцены")
+		
 func end_player_turn():
 	if debug_mode: print("=== end_player_turn вызван ===")
 	if game_over:
 		return
-	
+	if pending_events.size() > 0:
+		request_battle_summary()
+		# Очистим после получения ответа
+	else:
+		_proceed_to_enemy_turn()
 	_pending_attacks.clear()
 	
 	# Находим GridManager
@@ -644,3 +650,56 @@ func request_death_description(defender: String):
 	}
 	
 	ai_client.send_request([], {}, context, "death")
+	
+func add_event(event: Dictionary):
+	pending_events.append(event)
+	print("Событие добавлено. Всего событий: ", pending_events.size())
+func request_battle_summary():
+	if pending_events.is_empty():
+		print("Нет событий для описания")
+		return
+	
+	is_waiting_for_ai = true
+	game_message.emit("📜 Мастер подземелий подводит итог хода...")
+	
+	var context = {
+		"events": pending_events,
+		"player_name": "Арагорн"
+	}
+	
+	ai_client.send_request([], {}, context, "battle_summary")
+
+func clear_events():
+	pending_events.clear()
+
+func _proceed_to_enemy_turn():
+	_pending_attacks.clear()
+	
+	var root = get_tree().current_scene
+	var grid_manager = null
+	if root:
+		if root.has_node("GridManager"):
+			grid_manager = root.get_node("GridManager")
+		elif root.has_node("GridContainer/GridManager"):
+			grid_manager = root.get_node("GridContainer/GridManager")
+		else:
+			grid_manager = root.find_child("GridManager", true, false)
+	
+	if grid_manager:
+		grid_manager.selected_unit_id = ""
+		grid_manager._clear_highlight()
+	
+	combat_state.reset_action_points()
+	
+	var enemies = combat_state.get_all_enemies()
+	if debug_mode: print("Врагов перед ходом врагов: ", enemies.size())
+	
+	if enemies.is_empty():
+		game_message.emit("Все враги повержены! Вы победили!")
+		return
+	
+	combat_state.current_turn_index = 1
+	if debug_mode: print("current_turn_index = ", combat_state.current_turn_index)
+	
+	game_message.emit("Ход врагов...")
+	_simple_enemy_turn()
