@@ -4,7 +4,7 @@ static func get_location_prompt() -> String:
 Важно: exits должен быть массивом словарей с полями x, y и description. Не используй ["north"].
 Создай простую локацию. Размер 8x8. Используй не более 2 типов врагов."""
 static func get_battle_summary_prompt(events: Array, player_name: String) -> String:
-	var prompt = player_name + " совершил несколько действий:\n"
+	var prompt = player_name + " совершил несколько действий за ход:\n"
 	for event in events:
 		if event["type"] == "attack":
 			if event["is_hit"]:
@@ -15,5 +15,6 @@ static func get_battle_summary_prompt(events: Array, player_name: String) -> Str
 			else:
 				prompt += "- Промахнулся по " + event["defender"] + "\n"
 	
-	prompt += "\nОпиши результаты этих действий одной-двумя эпичными фразами на русском языке."
+	prompt += "\nОпиши результаты этих действий одной эпичной фразой на русском языке. Не задавай вопросов. Просто опиши, что произошло."
 	return prompt
+		
