@@ -69,7 +69,10 @@ func _build_system_prompt(context: Dictionary, additional: Dictionary, request_t
 	elif request_type == "battle_summary":
 		var events = additional.get("events", [])
 		var player_name = additional.get("player_name", "Игрок")
-		return PromptTemplates.get_battle_summary_prompt(events, player_name)
+		print("DEBUG: battle_summary запрос, событий: ", events.size())
+		var prompt = PromptTemplates.get_battle_summary_prompt(events, player_name)
+		print("DEBUG: промпт: ", prompt)
+		return prompt
 	
 	elif request_type == "death":
 		var defender = additional.get("defender", "враг")
