@@ -94,8 +94,17 @@ func _build_system_prompt(context: Dictionary, additional: Dictionary, request_t
 		base += "Будь краток. Не используй много врагов. 2-3 типа врагов максимум.\n"
 		base += additional.get("instruction", "")
 		return base
+	elif request_type == "story":
+		var characters = additional.get("characters", [])
+		var setting = additional.get("setting", "таверна")
 	
-	return "Ты — мастер подземелий. Отвечай кратко."
+		var prompt = "Создай историю для группы приключенцев:\n"
+		for ch in characters:
+			prompt += "- " + ch["name"] + " (" + ch["class"] + ")\n"
+		prompt += "\nОни оказались в " + setting + ". Опиши, как они встретились и почему оказались вместе. Верни JSON:\n"
+		prompt += '{"story": "текст истории", "location": {"name": "название", "biome": "dungeon/forest/city"}}'
+		return prompt
+		return "Ты — мастер подземелий. Отвечай кратко."
 
 func _on_request_completed(_result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, http: HTTPRequest):
 	http.queue_free()
