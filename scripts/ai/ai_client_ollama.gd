@@ -41,36 +41,27 @@ var tools = [
 	}
 ]
 func send_request(messages: Array, game_context: Dictionary, additional_context: Dictionary = {}, request_type: String = "default"):
-	# 1. Отменяем старый запрос
+	# Отменяем предыдущий запрос
 	cancel_current_request()
 	
-	# 2. Формируем промпт
+	# Формируем промпт
 	var system_prompt = _build_system_prompt(game_context, additional_context, request_type)
 	var ollama_messages = [{"role": "system", "content": system_prompt}] + messages
-	var body = {
-		"model": model_name,
-		"messages": ollama_messages,
-		"tools": tools,  # добавляем инструменты
-		"stream": false,
-		"options": {
-			"temperature": 0.7,
-			"num_predict": num_predict
-			}
-	}
-	# 3. Создаём ОДИН HTTP-клиент
+	
+	# Создаём HTTP-клиент
 	current_request = HTTPRequest.new()
 	add_child(current_request)
 	current_request.request_completed.connect(_on_request_completed.bind(current_request))
 	
-	# 4. Настраиваем длину ответа
+	# Настраиваем длину ответа
 	var num_predict = 200
 	if request_type == "location":
 		num_predict = 6000
 	elif request_type == "death":
 		num_predict = 100
 	
-	# 5. Формируем тело запроса
-	var body = {
+	# Формируем тело запроса (ОДИН РАЗ)
+	var request_body = {
 		"model": model_name,
 		"messages": ollama_messages,
 		"stream": false,
@@ -80,11 +71,14 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 		}
 	}
 	
-	# 6. Отправляем
-	var json_body = JSON.stringify(body)
+	# Если это тест инструментов, добавляем tools
+	if request_type == "test_tools":
+		request_body["tools"] = tools
+	
+	var json_body = JSON.stringify(request_body)
 	var headers = ["Content-Type: application/json"]
 	current_request.request(API_URL, headers, HTTPClient.METHOD_POST, json_body)
-
+	
 func _build_system_prompt(context: Dictionary, additional: Dictionary, request_type: String) -> String:
 	if request_type == "description":
 		var is_hit = additional.get("is_hit", false)
@@ -109,13 +103,14 @@ func _build_system_prompt(context: Dictionary, additional: Dictionary, request_t
 		var events = additional.get("events", [])
 		var player_name = additional.get("player_name", "Игрок")
 		return PromptTemplates.get_battle_summary_prompt(events, player_name)
-	
+		pass
 	elif request_type == "death":
 		var defender = additional.get("defender", "враг")
 		return "Опиши одной фразой смерть " + defender + ". Максимум 15 слов."
-	
 	elif request_type == "location":
 		return PromptTemplates.get_location_prompt()
+	elif request_type == "test_tools":
+		return "Ты можешь использовать инструменты: attack_enemy, move_player. Отвечай, вызывая их."
 	elif request_type == "test_tools":
 		return "Ты можешь использовать инструменты: attack_enemy, move_player. Отвечай, вызывая их."
 	# ВАЖНО: возвращаем значение по умолчанию для всех остальных случаев
@@ -129,7 +124,6 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	
 	var response_text = body.get_string_from_utf8()
 	print("Ответ Ollama получен (длина: ", response_text.length(), " символов)")
-	print("Первые 1000 символов ответа:\n", response_text.substr(0, 1000))
 	
 	var json = JSON.new()
 	var response = json.parse_string(response_text)
@@ -138,7 +132,11 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 		return
 	
 	var content = response["message"].get("content", "")
-	content = content.strip_edges()
+	if response["message"].has("tool_calls"):
+		print("AI вызвал инструменты!")
+		var tool_calls = response["message"]["tool_calls"]
+		response_received.emit({"type": "tool_calls", "data": tool_calls})
+		return
 	
 	# Удаляем markdown обрамление
 	if content.begins_with("```json"):
