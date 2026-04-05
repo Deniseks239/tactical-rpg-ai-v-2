@@ -192,7 +192,6 @@ func _on_cell_pressed(x: int, y: int):
 	print("Клик по клетке ", x, ",", y)
 	
 	if game_controller.is_waiting_for_ai:
-		print("Ожидание ответа AI, действия временно заблокированы")
 		game_controller.game_message.emit("Подождите, AI описывает происходящее...")
 		return
 	
@@ -200,26 +199,35 @@ func _on_cell_pressed(x: int, y: int):
 		print("Игра окончена")
 		return
 	
-	if not combat_state:
-		print("Ошибка: combat_state не инициализирован")
-		return
-	
-	# Проверка на выход (дверь) — только для игрока
+	# Проверка на выход (дверь)
 	if selected_unit_id == "player_1" or selected_unit_id == "":
 		var location_manager = get_node("/root/LocationManagerAuto")
 		if location_manager and location_manager.current_location:
 			for exit_data in location_manager.current_location.exits:
 				if exit_data.x == x and exit_data.y == y:
-					print("Вход в дверь: ", exit_data.description)
 					_enter_door(exit_data)
 					return
 	
+	# РАЗЛИЧИЕ: Мирный vs Боевой режим
+	if combat_state.mode == CombatState.GameMode.PEACEFUL:
+		# Мирный режим: свободное перемещение
+		if selected_unit_id != "":
+			_move_unit_free(selected_unit_id, x, y)
+		else:
+			var pos_key = str(x) + "_" + str(y)
+			if grid_state.units.has(pos_key):
+				var unit = grid_state.units[pos_key]
+				if unit["type"] == "player":
+					selected_unit_id = unit["id"]
+					print("Выбран игрок: ", selected_unit_id)
+		return
+	
+	# Боевой режим: с очками действий
 	print("is_player_turn = ", combat_state.is_player_turn())
 	if not combat_state.is_player_turn():
 		print("Сейчас ход врагов, подождите")
 		return
 	
-	# Индикатор обработки действия
 	game_controller.game_message.emit("🖱️ Обработка действия...")
 	
 	if selected_unit_id != "":
@@ -239,6 +247,21 @@ func _on_cell_pressed(x: int, y: int):
 				selected_unit_id = unit["id"]
 				_highlight_available_moves(selected_unit_id)
 				print("Выбран игрок: ", selected_unit_id)
+
+# Новая функция для мирного перемещения (без ограничений)
+func _move_unit_free(unit_id: String, target_x: int, target_y: int):
+	var start_pos = grid_state.get_unit_position(unit_id)
+	if start_pos.x == -1:
+		return
+	
+	if grid_state.is_walkable(target_x, target_y, unit_id):
+		var unit_data = grid_state.units[str(start_pos.x) + "_" + str(start_pos.y)]
+		grid_state.remove_unit(unit_id)
+		grid_state.set_unit(unit_id, unit_data["name"], unit_data["type"], target_x, target_y)
+		refresh_grid()
+		print("Юнит свободно перемещен на ", target_x, ",", target_y)
+	else:
+		print("Клетка ", target_x, ",", target_y, " недоступна")
 
 func _attack(attacker_id: String, defender_id: String):
 	var attacker_pos = grid_state.get_unit_position(attacker_id)
