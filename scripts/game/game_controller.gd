@@ -177,6 +177,12 @@ func _on_ai_response(response: Dictionary):
 		_refresh_grid()
 	
 	elif typ == "text":
+		if pending_action == "battle_summary":
+			print("Суммарное описание хода получено")
+			pending_action = ""
+			clear_events()
+			_proceed_to_enemy_turn()
+			return
 		var text = response["data"]
 		
 		# Пытаемся найти JSON в тексте (для генерации локации)
