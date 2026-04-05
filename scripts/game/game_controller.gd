@@ -48,7 +48,8 @@ func _ready():
 	await get_tree().process_frame
 	
 	# Запускаем AI генерацию
-	_start_game()
+	#_start_game()
+	test_function_calling()
 
 func _start_game():
 	print("Запрос к AI на генерацию начальной локации")
@@ -156,6 +157,7 @@ func _on_ai_response(response: Dictionary):
 	
 	print("=== _on_ai_response: typ = ", typ)
 	
+	
 	if typ == "actions":
 		var actions = response["data"]
 		print("Получено действий от AI: ", actions.size())
@@ -175,7 +177,21 @@ func _on_ai_response(response: Dictionary):
 			_handle_action(action)
 		
 		_refresh_grid()
-	
+	if typ == "tool_calls":
+		var tool_calls = response["data"]
+		print("Получены вызовы инструментов: ", tool_calls)
+		for tool_call in tool_calls:
+			var function_name = tool_call["function"]["name"]
+			var arguments = JSON.parse_string(tool_call["function"]["arguments"])
+		
+			match function_name:
+				"attack_enemy":
+					print("Атака врага: ", arguments["enemy_name"])
+					# Здесь вызываем функцию атаки
+				"move_player":
+					print("Перемещение: ", arguments["direction"])
+					# Здесь вызываем функцию перемещения
+		return
 	elif typ == "text":
 		if pending_action == "battle_summary":
 			print("Суммарное описание хода получено")
