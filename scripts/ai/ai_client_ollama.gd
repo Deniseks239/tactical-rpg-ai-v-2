@@ -6,25 +6,30 @@ signal error_occurred(error: String)
 
 const API_URL = "http://localhost:11434/api/chat"
 var model_name: String = "gemma3:4b"
+var current_request: HTTPRequest = null
 var PromptTemplates = preload("res://scripts/ai/prompt_templates.gd")
 
 func send_request(messages: Array, game_context: Dictionary, additional_context: Dictionary = {}, request_type: String = "default"):
-	cancel_current_request()  # Отменяем предыдущий запрос
+	# 1. Отменяем старый запрос
+	cancel_current_request()
+	
+	# 2. Формируем промпт
+	var system_prompt = _build_system_prompt(game_context, additional_context, request_type)
+	var ollama_messages = [{"role": "system", "content": system_prompt}] + messages
+	
+	# 3. Создаём ОДИН HTTP-клиент
 	current_request = HTTPRequest.new()
 	add_child(current_request)
 	current_request.request_completed.connect(_on_request_completed.bind(current_request))
-	var system_prompt = _build_system_prompt(game_context, additional_context, request_type)
-	var ollama_messages = [{"role": "system", "content": system_prompt}] + messages
-	var http = HTTPRequest.new()
-	add_child(http)
-	http.request_completed.connect(_on_request_completed.bind(http))
 	
-	var num_predict = 200  # очень короткие описания
+	# 4. Настраиваем длину ответа
+	var num_predict = 200
 	if request_type == "location":
 		num_predict = 6000
 	elif request_type == "death":
 		num_predict = 100
 	
+	# 5. Формируем тело запроса
 	var body = {
 		"model": model_name,
 		"messages": ollama_messages,
@@ -35,9 +40,10 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 		}
 	}
 	
+	# 6. Отправляем
 	var json_body = JSON.stringify(body)
 	var headers = ["Content-Type: application/json"]
-	http.request(API_URL, headers, HTTPClient.METHOD_POST, json_body)
+	current_request.request(API_URL, headers, HTTPClient.METHOD_POST, json_body)
 
 func _build_system_prompt(context: Dictionary, additional: Dictionary, request_type: String) -> String:
 	if request_type == "description":
@@ -182,7 +188,6 @@ func _fix_incomplete_json(content: String) -> String:
 		print("JSON восстановлен: добавлено закрывающих скобок")
 	
 	return result
-var current_request: HTTPRequest = null
 
 func cancel_current_request():
 	if current_request and current_request.is_inside_tree():
