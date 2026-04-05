@@ -8,7 +8,38 @@ const API_URL = "http://localhost:11434/api/chat"
 var model_name: String = "qwen3:4b"
 var current_request: HTTPRequest = null
 var PromptTemplates = preload("res://scripts/ai/prompt_templates.gd")
-
+var tools = [
+	{
+		"type": "function",
+		"function": {
+			"name": "attack_enemy",
+			"description": "Атаковать врага",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"enemy_name": {"type": "string", "description": "Имя врага"},
+					"damage": {"type": "integer", "description": "Нанесённый урон"}
+				},
+				"required": ["enemy_name"]
+			}
+		}
+	},
+	{
+		"type": "function",
+		"function": {
+			"name": "move_player",
+			"description": "Переместить игрока",
+			"parameters": {
+				"type": "object",
+				"properties": {
+					"direction": {"type": "string", "description": "Направление: север, юг, запад, восток"},
+					"steps": {"type": "integer", "description": "Количество шагов"}
+				},
+				"required": ["direction"]
+			}
+		}
+	}
+]
 func send_request(messages: Array, game_context: Dictionary, additional_context: Dictionary = {}, request_type: String = "default"):
 	# 1. Отменяем старый запрос
 	cancel_current_request()
@@ -16,7 +47,16 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 	# 2. Формируем промпт
 	var system_prompt = _build_system_prompt(game_context, additional_context, request_type)
 	var ollama_messages = [{"role": "system", "content": system_prompt}] + messages
-	
+	var body = {
+		"model": model_name,
+		"messages": ollama_messages,
+		"tools": tools,  # добавляем инструменты
+		"stream": false,
+		"options": {
+			"temperature": 0.7,
+			"num_predict": num_predict
+			}
+	}
 	# 3. Создаём ОДИН HTTP-клиент
 	current_request = HTTPRequest.new()
 	add_child(current_request)
@@ -47,7 +87,6 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 
 func _build_system_prompt(context: Dictionary, additional: Dictionary, request_type: String) -> String:
 	if request_type == "description":
-		# Переменные нужно брать из additional, а не из context
 		var is_hit = additional.get("is_hit", false)
 		var damage = additional.get("damage", 0)
 		var attacker = additional.get("attacker", "")
@@ -65,14 +104,11 @@ func _build_system_prompt(context: Dictionary, additional: Dictionary, request_t
 				return "Опиши одной короткой фразой: " + attacker + " наносит " + str(damage) + " урона (" + severity + "). Максимум 12 слов."
 		else:
 			return "Опиши одной короткой фразой: " + attacker + " промахивается. Максимум 10 слов."
-
+	
 	elif request_type == "battle_summary":
 		var events = additional.get("events", [])
 		var player_name = additional.get("player_name", "Игрок")
-		print("DEBUG: battle_summary запрос, событий: ", events.size())
-		var prompt = PromptTemplates.get_battle_summary_prompt(events, player_name)
-		print("DEBUG: промпт: ", prompt)
-		return prompt
+		return PromptTemplates.get_battle_summary_prompt(events, player_name)
 	
 	elif request_type == "death":
 		var defender = additional.get("defender", "враг")
@@ -80,31 +116,10 @@ func _build_system_prompt(context: Dictionary, additional: Dictionary, request_t
 	
 	elif request_type == "location":
 		return PromptTemplates.get_location_prompt()
-		# Длинный промпт для генерации локации
-		var grid_str = ""
-		var grid = context.get("grid", [])
-		for row in grid:
-			for cell in row:
-				grid_str += str(cell) + " "
-			grid_str += "\n"
-	
-		var base = "Ты — мастер подземелий. Создай параметры для локации в формате JSON.\n"
-		base += "Верни ТОЛЬКО JSON. БЕЗ лишнего текста.\n"
-		base += "Формат: {\"action\": \"generate_location\", \"parameters\": {...}}\n"
-		base += "Будь краток. Не используй много врагов. 2-3 типа врагов максимум.\n"
-		base += additional.get("instruction", "")
-		return base
-	elif request_type == "story":
-		var characters = additional.get("characters", [])
-		var setting = additional.get("setting", "таверна")
-	
-		var prompt = "Создай историю для группы приключенцев:\n"
-		for ch in characters:
-			prompt += "- " + ch["name"] + " (" + ch["class"] + ")\n"
-		prompt += "\nОни оказались в " + setting + ". Опиши, как они встретились и почему оказались вместе. Верни JSON:\n"
-		prompt += '{"story": "текст истории", "location": {"name": "название", "biome": "dungeon/forest/city"}}'
-		return prompt
-		return "Ты — мастер подземелий. Отвечай кратко."
+	elif request_type == "test_tools":
+		return "Ты можешь использовать инструменты: attack_enemy, move_player. Отвечай, вызывая их."
+	# ВАЖНО: возвращаем значение по умолчанию для всех остальных случаев
+	return "Ты — мастер подземелий. Отвечай кратко."
 
 func _on_request_completed(_result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, http: HTTPRequest):
 	http.queue_free()
@@ -147,13 +162,18 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	if parsed is Array:
 		print("Успешно распарсено как массив: ", parsed.size(), " действий")
 		response_received.emit({"type": "actions", "data": parsed})
-	elif parsed is Dictionary:
-		print("Успешно распарсено как словарь")
-		response_received.emit({"type": "text", "data": content})
-	else:
-		print("Не удалось распарсить JSON, передаём как текст")
-		response_received.emit({"type": "text", "data": content})
-
+	if parsed is Dictionary and parsed.has("tool_calls"):
+		# AI вызвал инструмент
+		for tool_call in parsed["tool_calls"]:
+			var function_name = tool_call["function"]["name"]
+			var arguments = JSON.parse_string(tool_call["function"]["arguments"])
+			# Вызываем соответствующую функцию в Godot
+			match function_name:
+				"attack_enemy":
+					attack_enemy(arguments["enemy_name"], arguments.get("damage", 0))
+				"move_player":
+					move_player(arguments["direction"], arguments.get("steps", 1))
+		return
 func _fix_incomplete_json(content: String) -> String:
 	var result = content
 	var brackets = 0
