@@ -707,3 +707,29 @@ func _proceed_to_enemy_turn():
 	
 	game_message.emit("Ход врагов...")
 	_simple_enemy_turn()
+func parse_location_description(description: String):
+	var result = {
+		"biome": "dungeon",
+		"enemies": [],
+		"exits": []
+	}
+	
+	var desc_lower = description.to_lower()
+	
+	# Определяем биом
+	if desc_lower.find("пещер") != -1 or desc_lower.find("подземель") != -1:
+		result["biome"] = "dungeon"
+	elif desc_lower.find("лес") != -1:
+		result["biome"] = "forest"
+	
+	# Ищем врагов
+	var enemy_keywords = ["скелет", "гоблин", "орк", "крыса"]
+	for keyword in enemy_keywords:
+		if desc_lower.find(keyword) != -1:
+			result["enemies"].append({"type": keyword, "count": 1})
+	
+	# Ищем выходы
+	if desc_lower.find("проход") != -1 or desc_lower.find("дверь") != -1:
+		result["exits"].append({"x": 7, "y": 4, "description": "Проход"})
+	
+	return result
