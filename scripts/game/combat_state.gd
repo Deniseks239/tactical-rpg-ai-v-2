@@ -10,6 +10,28 @@ var current_turn_index: int = 0
 var action_points: int = 3
 var units: Dictionary = {}  # unit_id -> данные
 
+func enter_combat():
+	mode = GameMode.COMBAT
+	phase = Phase.COMBAT
+	_calculate_initiative()
+
+func exit_combat():
+	mode = GameMode.PEACEFUL
+	phase = Phase.EXPLORATION
+
+func _calculate_initiative():
+	# Простейший расчёт инициативы: все юниты по порядку
+	initiative_order = []
+	for unit_id in units.keys():
+		initiative_order.append(unit_id)
+	# Можно добавить бросок кубика для каждого
+
+func check_combat_start(player_attacked: bool, enemy_noticed_player: bool):
+	if mode == GameMode.PEACEFUL:
+		if player_attacked or enemy_noticed_player:
+			enter_combat()
+			return true
+	return false
 func add_unit(unit_id: String, data: Dictionary):
 	units[unit_id] = data
 
@@ -102,18 +124,3 @@ func to_dict() -> Dictionary:
 		"action_points": action_points,
 		"units": units_data
 	}
-func enter_combat():
-	mode = GameMode.COMBAT
-	phase = Phase.COMBAT
-	# Вычисляем инициативу всех участников
-	_calculate_initiative()
-
-func exit_combat():
-	mode = GameMode.PEACEFUL
-	phase = Phase.EXPLORATION
-	
-func check_combat_start():
-	if mode == GameMode.PEACEFUL:
-		# Если игрок атаковал или враг заметил игрока
-		if player_attacked or enemy_noticed_player:
-			enter_combat()
