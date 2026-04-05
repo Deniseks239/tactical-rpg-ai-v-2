@@ -733,3 +733,11 @@ func parse_location_description(description: String):
 		result["exits"].append({"x": 7, "y": 4, "description": "Проход"})
 	
 	return result
+func test_function_calling():
+	print("=== ТЕСТ FUNCTION CALLING ===")
+	
+	var prompt = "Атакуй гоблина!"
+	var test_messages = [{"role": "user", "content": prompt}]
+	
+	# Отправляем запрос с tools
+	ai_client.send_request(test_messages, {}, {}, "test_tools")
