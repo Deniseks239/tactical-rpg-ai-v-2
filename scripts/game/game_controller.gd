@@ -49,7 +49,7 @@ func _ready():
 	
 	# Запускаем AI генерацию
 	#_start_game()
-	test_function_calling()
+	test_structured_text()
 
 func _start_game():
 	print("Запрос к AI на генерацию начальной локации")
@@ -177,6 +177,31 @@ func _on_ai_response(response: Dictionary):
 			_handle_action(action)
 		
 		_refresh_grid()
+	if typ == "text":
+		var text = response["data"]
+		print("AI ответил: ", text)
+	
+		# Ищем команду в формате [команда:цель:параметр]
+		var regex = RegEx.new()
+		regex.compile("\\[([a-z]+):([a-zа-я]+):(\\d+)\\]")
+		var match = regex.search(text)
+	
+		if match:
+			var command = match.get_string(1)
+			var target = match.get_string(2)
+			var value = int(match.get_string(3))
+		
+			print("Команда: ", command, ", цель: ", target, ", значение: ", value)
+			
+			match command:
+				"attack":
+					_perform_attack_by_name(target)
+				"move":
+					_perform_move_by_direction(target)
+				"examine":
+					game_message.emit("Осмотр: " + target)
+		else:
+			print("Не удалось распознать команду")
 	if typ == "tool_calls":
 		var tool_calls = response["data"]
 		print("Получены вызовы инструментов: ", tool_calls)
@@ -801,3 +826,10 @@ func _get_grid_manager():
 		elif root.has_node("GridContainer/GridManager"):
 			return root.get_node("GridContainer/GridManager")
 	return null
+func test_structured_text():
+	print("=== ТЕСТ СТРУКТУРИРОВАННОГО ТЕКСТА ===")
+	
+	var prompt = "Атакую гоблина"
+	var context = {"input": prompt}
+	
+	ai_client.send_request([], {}, context, "test_tools")
