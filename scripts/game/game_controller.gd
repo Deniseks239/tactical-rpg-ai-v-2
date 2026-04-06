@@ -811,10 +811,14 @@ func _perform_move_by_direction(direction: String):
 		grid_manager._try_move_unit("player_1", new_pos.x, new_pos.y)
 
 func _find_enemy_by_name(name: String) -> String:
+	var name_lower = name.to_lower()
+	
 	for unit_id in combat_state.units.keys():
 		var unit = combat_state.units[unit_id]
 		if unit.get("type") == "enemy":
-			if unit.get("name", "").to_lower() == name.to_lower():
+			var enemy_name = unit.get("name", "").to_lower()
+			# Проверяем точное совпадение или вхождение
+			if enemy_name == name_lower or enemy_name.find(name_lower) != -1 or name_lower.find(enemy_name) != -1:
 				return unit_id
 	return ""
 
