@@ -264,6 +264,16 @@ func _move_unit_free(unit_id: String, target_x: int, target_y: int):
 		print("Клетка ", target_x, ",", target_y, " недоступна")
 
 func _attack(attacker_id: String, defender_id: String):
+	# Если игра в мирном режиме, переключаем в боевой
+	if combat_state.mode == CombatState.GameMode.PEACEFUL:
+		print("Начало боя!")
+		combat_state.mode = CombatState.GameMode.COMBAT
+		combat_state.phase = CombatState.Phase.COMBAT
+		combat_state.initiative_order = ["player_1"]
+		for enemy_id in combat_state.get_all_enemies():
+			combat_state.initiative_order.append(enemy_id)
+		combat_state.current_turn_index = 0
+		combat_state.reset_action_points()
 	var attacker_pos = grid_state.get_unit_position(attacker_id)
 	var defender_pos = grid_state.get_unit_position(defender_id)
 	
