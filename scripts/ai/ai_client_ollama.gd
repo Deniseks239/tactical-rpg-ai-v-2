@@ -52,7 +52,7 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 	full_messages += messages
 	# Формируем промпт
 	var system_prompt = _build_system_prompt(game_context, additional_context, request_type)
-	var ollama_messages = [{"role": "system", "content": system_prompt}] + messages
+	var ollama_messages = [{"role": "system", "content": system_prompt}] + conversation_history + messages
 	
 	# Создаём HTTP-клиент
 	current_request = HTTPRequest.new()
@@ -82,6 +82,17 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 	current_request.request(API_URL, headers, HTTPClient.METHOD_POST, json_body)
 
 func _build_system_prompt(context: Dictionary, additional: Dictionary, request_type: String) -> String:
+	# Добавляем правила D&D в начало промпта
+	var rules_prompt = DNDRules.get_combat_rules() + "\n\n"
+	
+	# Для описаний атак добавляем информацию о врагах
+	if request_type == "description" or request_type == "battle_summary":
+		var enemy_info = ""
+		var enemies = context.get("enemies", [])
+		for enemy in enemies:
+			enemy_info += DNDRules.get_enemy_info(enemy.get("type", "")) + "\n"
+		if enemy_info != "":
+			rules_prompt += "Информация о врагах:\n" + enemy_info + "\n"
 	var base_prompt = "Ты — мастер подземелий D&D.\n"
 	if request_type == "battle_summary" or request_type == "description":
 		base_prompt += DNDRules.get_combat_rules() + "\n"
