@@ -220,15 +220,10 @@ func _on_ai_response(response: Dictionary):
 					# Здесь вызываем функцию перемещения
 		return
 	elif typ == "text":
-		if pending_action == "battle_summary":
-			print("Суммарное описание хода получено")
-			pending_action = ""
-			clear_events()
-			_proceed_to_enemy_turn()
-			return
 		var text = response["data"]
-		
-		# Пытаемся найти JSON в тексте (для генерации локации)
+	
+		# ===== СНАЧАЛА ПРОВЕРЯЕМ JSON ДЛЯ ГЕНЕРАЦИИ ЛОКАЦИИ =====
+		# Пытаемся найти JSON в тексте
 		var json_start = text.find("{")
 		var json_end = text.rfind("}")
 		if json_start != -1 and json_end != -1 and json_end > json_start:
@@ -245,54 +240,35 @@ func _on_ai_response(response: Dictionary):
 						var new_location = location_manager.generate_location(params)
 						location_manager.set_current_location(new_location)
 						return
+	
+		# ===== ЗАТЕМ ПРОВЕРЯЕМ СТРУКТУРИРОВАННУЮ КОМАНДУ =====
+		# Ищем команду в формате [команда:цель:параметр]
+		var regex = RegEx.new()
+		regex.compile("\\[([a-z]+):([a-zа-я]+):(\\d+)\\]")
+		var match = regex.search(text)
+	
+		if match:
+			var command = match.get_string(1)
+			var target = match.get_string(2)
+			var value = int(match.get_string(3))
 		
+			print("Команда: ", command, ", цель: ", target, ", значение: ", value)
+		
+			match command:
+				"attack":
+					_perform_attack_by_name(target)
+				"move":
+					_perform_move_by_direction(target)
+				"examine":
+					game_message.emit("Осмотр: " + target)
+			return
+	
+		# ===== ЕСЛИ НИ ТО, НИ ДРУГОЕ, ВЫВОДИМ КАК ТЕКСТ =====
 		if text and not text.is_empty():
 			game_message.emit(text)
 			print("AI говорит: ", text)
-		
+	
 		is_waiting_for_ai = false
-		
-		# Если это был ответ на суммарное описание хода
-		if pending_action == "battle_summary":
-			print("Суммарное описание хода получено")
-			pending_action = ""
-			clear_events()
-			_proceed_to_enemy_turn()
-			return
-		
-		# Обработка после получения ответа
-		if pending_action == "player_attack":
-			print("Атака игрока завершена (text)")
-			pending_action = ""
-			if combat_state.action_points <= 0 and not game_over:
-				end_player_turn()
-		
-		elif pending_action == "enemy_turn":
-			print("Обработка хода врагов (text)")
-			if _pending_attacks.size() > 0:
-				var next_attack = _pending_attacks.pop_front()
-				print("Описываем следующую атаку врага: ", next_attack["name"])
-				if next_attack["is_hit"]:
-					request_action_description("атака врага", next_attack["name"], "Арагорн", next_attack["damage"], true)
-				else:
-					request_action_description("атака врага", next_attack["name"], "Арагорн", 0, false)
-			else:
-				print("Все атаки врагов описаны, передаём ход игроку")
-				pending_action = ""
-				
-				if combat_state.units.get("player_1", {}).get("hp", 0) <= 0:
-					game_message.emit("Арагорн повержен! Игра окончена.")
-					game_over = true
-					return
-				
-				var enemies = combat_state.get_all_enemies()
-				if enemies.is_empty():
-					game_message.emit("Все враги повержены! Вы победили!")
-				else:
-					combat_state.current_turn_index = 0
-					combat_state.reset_action_points()
-					game_message.emit("Ваш ход!")
-					_refresh_grid()
 	
 	elif typ == "description":
 		var text = response["data"]
