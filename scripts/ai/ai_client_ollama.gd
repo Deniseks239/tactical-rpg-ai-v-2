@@ -8,6 +8,8 @@ const API_URL = "http://localhost:11434/api/chat"
 var model_name: String = "qwen3:4b"
 var current_request: HTTPRequest = null
 var PromptTemplates = preload("res://scripts/ai/prompt_templates.gd")
+var conversation_history: Array = []
+var max_history: int = 10  # Храним последние 10 сообщений
 
 # Инструменты для function calling
 var tools = [
@@ -46,7 +48,8 @@ var tools = [
 func send_request(messages: Array, game_context: Dictionary, additional_context: Dictionary = {}, request_type: String = "default"):
 	# Отменяем предыдущий запрос
 	cancel_current_request()
-	
+	var full_messages = conversation_history.duplicate()
+	full_messages += messages
 	# Формируем промпт
 	var system_prompt = _build_system_prompt(game_context, additional_context, request_type)
 	var ollama_messages = [{"role": "system", "content": system_prompt}] + messages
@@ -79,6 +82,14 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 	current_request.request(API_URL, headers, HTTPClient.METHOD_POST, json_body)
 
 func _build_system_prompt(context: Dictionary, additional: Dictionary, request_type: String) -> String:
+	var base_prompt = "Ты — мастер подземелий D&D.\n"
+	if request_type == "battle_summary" or request_type == "description":
+		base_prompt += DNDRules.get_combat_rules() + "\n"
+	
+	# Добавляем информацию о врагах, если есть
+	var enemies = context.get("enemies", [])
+	for enemy in enemies:
+		base_prompt += DNDRules.get_enemy_info(enemy.get("type", "")) + "\n"
 	if request_type == "description":
 		var is_hit = additional.get("is_hit", false)
 		var damage = additional.get("damage", 0)
@@ -243,3 +254,10 @@ func cancel_current_request():
 		current_request.cancel_request()
 		current_request.queue_free()
 		current_request = null
+func add_to_history(role: String, content: String):
+	conversation_history.append({"role": role, "content": content})
+	if conversation_history.size() > max_history:
+		conversation_history.pop_front()
+
+func clear_history():
+	conversation_history.clear()
