@@ -183,14 +183,16 @@ func _on_ai_response(response: Dictionary):
 		for tool_call in tool_calls:
 			var function_name = tool_call["function"]["name"]
 			var arguments = JSON.parse_string(tool_call["function"]["arguments"])
-		
+			
 			match function_name:
 				"attack_enemy":
 					print("Атака врага: ", arguments["enemy_name"])
-					# Здесь вызываем функцию атаки
+					# Вызываем функцию атаки в grid_manager
+					_perform_attack_by_name(arguments["enemy_name"])
 				"move_player":
 					print("Перемещение: ", arguments["direction"])
-					# Здесь вызываем функцию перемещения
+					# Вызываем функцию перемещения
+					_perform_move_by_direction(arguments["direction"])
 		return
 	elif typ == "text":
 		if pending_action == "battle_summary":
@@ -757,3 +759,47 @@ func test_function_calling():
 	
 	# Отправляем запрос с tools
 	ai_client.send_request(test_messages, {}, {}, "test_tools")
+func _perform_attack_by_name(enemy_name: String):
+	# Ищем врага по имени
+	var enemy_id = _find_enemy_by_name(enemy_name)
+	if enemy_id:
+		var grid_manager = _get_grid_manager()
+		if grid_manager:
+			grid_manager._attack("player_1", enemy_id)
+	else:
+		game_message.emit("Не найден враг: " + enemy_name)
+
+func _perform_move_by_direction(direction: String):
+	var current_pos = grid_state.get_unit_position("player_1")
+	var new_pos = current_pos
+	
+	match direction.to_lower():
+		"север", "north":
+			new_pos.y -= 1
+		"юг", "south":
+			new_pos.y += 1
+		"запад", "west":
+			new_pos.x -= 1
+		"восток", "east":
+			new_pos.x += 1
+	
+	var grid_manager = _get_grid_manager()
+	if grid_manager:
+		grid_manager._try_move_unit("player_1", new_pos.x, new_pos.y)
+
+func _find_enemy_by_name(name: String) -> String:
+	for unit_id in combat_state.units.keys():
+		var unit = combat_state.units[unit_id]
+		if unit.get("type") == "enemy":
+			if unit.get("name", "").to_lower() == name.to_lower():
+				return unit_id
+	return ""
+
+func _get_grid_manager():
+	var root = get_tree().current_scene
+	if root:
+		if root.has_node("GridManager"):
+			return root.get_node("GridManager")
+		elif root.has_node("GridContainer/GridManager"):
+			return root.get_node("GridContainer/GridManager")
+	return null
