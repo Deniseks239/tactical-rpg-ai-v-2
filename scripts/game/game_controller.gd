@@ -48,8 +48,7 @@ func _ready():
 	await get_tree().process_frame
 	
 	# Запускаем AI генерацию
-	#_start_game()
-	test_structured_text()
+	_start_game()
 
 func _start_game():
 	print("Запрос к AI на генерацию начальной локации")
@@ -179,7 +178,6 @@ func _on_ai_response(response: Dictionary):
 		_refresh_grid()
 	if typ == "text":
 		var text = response["data"]
-		print("AI ответил: ", text)
 	
 		# Ищем команду в формате [команда:цель:параметр]
 		var regex = RegEx.new()
@@ -201,7 +199,11 @@ func _on_ai_response(response: Dictionary):
 				"examine":
 					game_message.emit("Осмотр: " + target)
 		else:
-			print("Не удалось распознать команду")
+		# Если не команда, выводим как обычный текст
+			game_message.emit(text)
+	
+		is_waiting_for_ai = false
+		return
 	if typ == "tool_calls":
 		var tool_calls = response["data"]
 		print("Получены вызовы инструментов: ", tool_calls)
