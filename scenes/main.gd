@@ -62,22 +62,10 @@ func _center_camera():
 		var center_y = (map_height / 2) * zoom
 		grid_manager.position = Vector2(center_x, center_y)
 
-func skip_turn():
-	print("=== skip_turn вызван ===")
-	if game_over:
-		return
-	
-	# Если бой идёт и это ход игрока
-	if combat_state.mode == CombatState.GameMode.COMBAT and combat_state.is_player_turn():
-		print("Пропуск хода игрока в бою")
-		combat_state.action_points = 0
-		end_player_turn()
-	elif combat_state.mode == CombatState.GameMode.PEACEFUL:
-		print("Сейчас мирный режим, пропуск хода не нужен")
-		game_message.emit("Вы не в бою")
-	else:
-		print("Сейчас ход врагов")
-		game_message.emit("Сейчас ход врагов, подождите")
+func _skip_turn():
+	print("SkipTurnButton нажата!")
+	if game_controller:
+		game_controller.skip_turn()
 
 func _on_send_pressed(text: String = ""):
 	print("SendButton нажата! Текст: ", input_field.text)
