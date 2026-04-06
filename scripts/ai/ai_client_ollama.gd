@@ -8,6 +8,8 @@ const API_URL = "http://localhost:11434/api/chat"
 var model_name: String = "qwen3:4b"
 var current_request: HTTPRequest = null
 var PromptTemplates = preload("res://scripts/ai/prompt_templates.gd")
+
+# Инструменты для function calling
 var tools = [
 	{
 		"type": "function",
@@ -40,6 +42,7 @@ var tools = [
 		}
 	}
 ]
+
 func send_request(messages: Array, game_context: Dictionary, additional_context: Dictionary = {}, request_type: String = "default"):
 	# Отменяем предыдущий запрос
 	cancel_current_request()
@@ -60,7 +63,7 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 	elif request_type == "death":
 		num_predict = 100
 	
-	# Формируем тело запроса (ОДИН РАЗ)
+	# Формируем тело запроса
 	var request_body = {
 		"model": model_name,
 		"messages": ollama_messages,
@@ -78,7 +81,7 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 	var json_body = JSON.stringify(request_body)
 	var headers = ["Content-Type: application/json"]
 	current_request.request(API_URL, headers, HTTPClient.METHOD_POST, json_body)
-	
+
 func _build_system_prompt(context: Dictionary, additional: Dictionary, request_type: String) -> String:
 	if request_type == "description":
 		var is_hit = additional.get("is_hit", false)
@@ -103,17 +106,18 @@ func _build_system_prompt(context: Dictionary, additional: Dictionary, request_t
 		var events = additional.get("events", [])
 		var player_name = additional.get("player_name", "Игрок")
 		return PromptTemplates.get_battle_summary_prompt(events, player_name)
-		pass
+	
 	elif request_type == "death":
 		var defender = additional.get("defender", "враг")
 		return "Опиши одной фразой смерть " + defender + ". Максимум 15 слов."
+	
 	elif request_type == "location":
 		return PromptTemplates.get_location_prompt()
+	
 	elif request_type == "test_tools":
 		return "Ты можешь использовать инструменты: attack_enemy, move_player. Отвечай, вызывая их."
-	elif request_type == "test_tools":
-		return "Ты можешь использовать инструменты: attack_enemy, move_player. Отвечай, вызывая их."
-	# ВАЖНО: возвращаем значение по умолчанию для всех остальных случаев
+	
+	# Возвращаем значение по умолчанию
 	return "Ты — мастер подземелий. Отвечай кратко."
 
 func _on_request_completed(_result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, http: HTTPRequest):
@@ -124,6 +128,7 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	
 	var response_text = body.get_string_from_utf8()
 	print("Ответ Ollama получен (длина: ", response_text.length(), " символов)")
+	print("Первые 1000 символов ответа:\n", response_text.substr(0, 1000))
 	
 	var json = JSON.new()
 	var response = json.parse_string(response_text)
@@ -135,9 +140,12 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	if response["message"].has("tool_calls"):
 		print("AI вызвал инструменты!")
 		var tool_calls = response["message"]["tool_calls"]
-		# Просто отправляем сигнал с данными, а не вызываем функции здесь
 		response_received.emit({"type": "tool_calls", "data": tool_calls})
 		return
+	
+	# Если нет tool_calls, обрабатываем обычный текст
+	var content = response["message"].get("content", "")
+	content = content.strip_edges()
 	
 	# Удаляем markdown обрамление
 	if content.begins_with("```json"):
@@ -157,23 +165,17 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	
 	# Пробуем распарсить JSON
 	var parsed = JSON.parse_string(content)
-	var content = response["message"].get("content", "")
 	
 	if parsed is Array:
 		print("Успешно распарсено как массив: ", parsed.size(), " действий")
 		response_received.emit({"type": "actions", "data": parsed})
-	if parsed is Dictionary and parsed.has("tool_calls"):
-		# AI вызвал инструмент
-		for tool_call in parsed["tool_calls"]:
-			var function_name = tool_call["function"]["name"]
-			var arguments = JSON.parse_string(tool_call["function"]["arguments"])
-			# Вызываем соответствующую функцию в Godot
-			match function_name:
-				"attack_enemy":
-					attack_enemy(arguments["enemy_name"], arguments.get("damage", 0))
-				"move_player":
-					move_player(arguments["direction"], arguments.get("steps", 1))
-		return
+	elif parsed is Dictionary:
+		print("Успешно распарсено как словарь")
+		response_received.emit({"type": "text", "data": content})
+	else:
+		print("Не удалось распарсить JSON, передаём как текст")
+		response_received.emit({"type": "text", "data": content})
+
 func _fix_incomplete_json(content: String) -> String:
 	var result = content
 	var brackets = 0
@@ -202,7 +204,6 @@ func _fix_incomplete_json(content: String) -> String:
 			elif c == '}':
 				braces -= 1
 	
-	# Добавляем недостающие закрывающие скобки
 	while brackets > 0:
 		result += "]"
 		brackets -= 1
@@ -210,10 +211,8 @@ func _fix_incomplete_json(content: String) -> String:
 		result += "}"
 		braces -= 1
 	
-	# Проверяем, не обрезана ли строка
 	var last_quote = content.rfind('"')
 	if last_quote != -1 and last_quote == content.length() - 1:
-		# Если строка обрезана, закрываем её
 		result += '"'
 	
 	if result != content:
