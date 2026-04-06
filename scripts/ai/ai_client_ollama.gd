@@ -168,7 +168,11 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 		content = content.substr(1, content.length() - 2)
 	
 	print("Контент после очистки (первые 500 символов):\n", content.substr(0, 500))
-	
+	# Если ответ начинается не с { или [, не пытаемся парсить JSON
+	if not content.begins_with("{") and not content.begins_with("["):
+		print("Обычный текст, не JSON")
+		response_received.emit({"type": "text", "data": content})
+		return
 	# ===== НОВАЯ ПРОВЕРКА: структурированная команда =====
 	# Проверяем, не является ли ответ командой в формате [команда:цель:число]
 	if content.begins_with("[") and content.ends_with("]"):
