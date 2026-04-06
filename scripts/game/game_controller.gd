@@ -755,8 +755,9 @@ func skip_turn():
 	if game_over:
 		return
 	
-	# Если в бою, завершаем ход игрока
+	# Если в бою и ход игрока
 	if combat_state.mode == CombatState.GameMode.COMBAT and combat_state.is_player_turn():
+		print("Пропуск хода игрока")
 		combat_state.action_points = 0
 		end_player_turn()
 	else:
