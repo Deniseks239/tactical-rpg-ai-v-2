@@ -749,3 +749,15 @@ func test_structured_text():
 	var context = {"input": prompt}
 	
 	ai_client.send_request([], {}, context, "test_tools")
+	
+func skip_turn():
+	print("=== skip_turn вызван ===")
+	if game_over:
+		return
+	
+	# Если в бою, завершаем ход игрока
+	if combat_state.mode == CombatState.GameMode.COMBAT and combat_state.is_player_turn():
+		combat_state.action_points = 0
+		end_player_turn()
+	else:
+		game_message.emit("Сейчас не ваш ход")
