@@ -287,7 +287,11 @@ func _on_ai_error(error: String):
 	print("Ошибка AI: ", error)
 	game_message.emit("Ошибка подключения к AI: " + error)
 	is_waiting_for_ai = false
-
+	
+func process_player_action(action_text: String):
+	print("Игрок написал: ", action_text)
+	var context = {"input": action_text}
+	ai_client.send_request([], {}, context, "test_tools")
 func _refresh_grid():
 	var root = get_tree().current_scene
 	if not root:
