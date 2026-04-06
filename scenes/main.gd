@@ -37,34 +37,47 @@ func _ready():
 
 func _zoom_in():
 	print("ZoomIn нажата!")
-	var camera = get_viewport().get_camera_2d()
-	if camera:
-		camera.scale *= 0.9
+	var grid_manager = $GridContainer/GridManager
+	if grid_manager:
+		grid_manager.target_scale *= 0.9
+		grid_manager.target_scale = clamp(grid_manager.target_scale, 0.3, 2.0)
+		grid_manager.scale = Vector2(grid_manager.target_scale, grid_manager.target_scale)
 
 func _zoom_out():
 	print("ZoomOut нажата!")
-	var camera = get_viewport().get_camera_2d()
-	if camera:
-		camera.scale *= 1.1
+	var grid_manager = $GridContainer/GridManager
+	if grid_manager:
+		grid_manager.target_scale *= 1.1
+		grid_manager.target_scale = clamp(grid_manager.target_scale, 0.3, 2.0)
+		grid_manager.scale = Vector2(grid_manager.target_scale, grid_manager.target_scale)
 
 func _center_camera():
 	print("CenterCamera нажата!")
-	var camera = get_viewport().get_camera_2d()
-	if camera:
-		var grid_manager = $GridContainer/GridManager if has_node("GridContainer/GridManager") else null
-		if not grid_manager:
-			grid_manager = $GridManager if has_node("GridManager") else null
-		if grid_manager and grid_manager.grid_state:
-			var map_width = grid_manager.grid_state.width * grid_manager.grid_state.cell_size
-			var map_height = grid_manager.grid_state.height * grid_manager.grid_state.cell_size
-			camera.global_position = Vector2(map_width / 2, map_height / 2)
+	var grid_manager = $GridContainer/GridManager
+	if grid_manager and grid_manager.grid_state:
+		var map_width = grid_manager.grid_state.width * grid_manager.grid_state.cell_size
+		var map_height = grid_manager.grid_state.height * grid_manager.grid_state.cell_size
+		var zoom = grid_manager.target_scale
+		var center_x = (map_width / 2) * zoom
+		var center_y = (map_height / 2) * zoom
+		grid_manager.position = Vector2(center_x, center_y)
 
-func _skip_turn():
-	print("SkipTurnButton нажата!")
-	if game_controller:
-		game_controller.skip_turn()
+func skip_turn():
+	print("=== skip_turn вызван ===")
+	if game_over:
+		return
+	
+	# Если бой идёт и это ход игрока
+	if combat_state.mode == CombatState.GameMode.COMBAT and combat_state.is_player_turn():
+		print("Пропуск хода игрока в бою")
+		combat_state.action_points = 0
+		end_player_turn()
+	elif combat_state.mode == CombatState.GameMode.PEACEFUL:
+		print("Сейчас мирный режим, пропуск хода не нужен")
+		game_message.emit("Вы не в бою")
 	else:
-		print("GameController не найден!")
+		print("Сейчас ход врагов")
+		game_message.emit("Сейчас ход врагов, подождите")
 
 func _on_send_pressed(text: String = ""):
 	print("SendButton нажата! Текст: ", input_field.text)
