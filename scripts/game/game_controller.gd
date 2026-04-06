@@ -156,74 +156,32 @@ func _on_ai_response(response: Dictionary):
 	
 	print("=== _on_ai_response: typ = ", typ)
 	
-	
 	if typ == "actions":
 		var actions = response["data"]
 		print("Получено действий от AI: ", actions.size())
 		for i in range(actions.size()):
 			var action = actions[i]
 			print("Действие ", i, ": ", action)
-			
-			if action.get("action") == "generate_location":
-				var params = action.get("parameters", {})
-				print("Генерация локации с параметрами: ", params)
-				var location_manager = get_node("/root/LocationManagerAuto")
-				if location_manager:
-					var new_location = location_manager.generate_location(params)
-					location_manager.set_current_location(new_location)
-					return
-			
 			_handle_action(action)
-		
 		_refresh_grid()
-	if typ == "text":
-		var text = response["data"]
 	
-		# Ищем команду в формате [команда:цель:параметр]
-		var regex = RegEx.new()
-		regex.compile("\\[([a-z]+):([a-zа-я]+):(\\d+)\\]")
-		var match = regex.search(text)
-	
-		if match:
-			var command = match.get_string(1)
-			var target = match.get_string(2)
-			var value = int(match.get_string(3))
-		
-			print("Команда: ", command, ", цель: ", target, ", значение: ", value)
-			
-			match command:
-				"attack":
-					_perform_attack_by_name(target)
-				"move":
-					_perform_move_by_direction(target)
-				"examine":
-					game_message.emit("Осмотр: " + target)
-		else:
-		# Если не команда, выводим как обычный текст
-			game_message.emit(text)
-	
-		is_waiting_for_ai = false
-		return
-	if typ == "tool_calls":
+	elif typ == "tool_calls":
 		var tool_calls = response["data"]
 		print("Получены вызовы инструментов: ", tool_calls)
 		for tool_call in tool_calls:
 			var function_name = tool_call["function"]["name"]
 			var arguments = JSON.parse_string(tool_call["function"]["arguments"])
-		
 			match function_name:
 				"attack_enemy":
 					print("Атака врага: ", arguments["enemy_name"])
-					# Здесь вызываем функцию атаки
 				"move_player":
 					print("Перемещение: ", arguments["direction"])
-					# Здесь вызываем функцию перемещения
 		return
+	
 	elif typ == "text":
 		var text = response["data"]
-	
-		# ===== СНАЧАЛА ПРОВЕРЯЕМ JSON ДЛЯ ГЕНЕРАЦИИ ЛОКАЦИИ =====
-		# Пытаемся найти JSON в тексте
+		
+		# ПРОВЕРЯЕМ JSON ДЛЯ ГЕНЕРАЦИИ ЛОКАЦИИ
 		var json_start = text.find("{")
 		var json_end = text.rfind("}")
 		if json_start != -1 and json_end != -1 and json_end > json_start:
@@ -240,20 +198,19 @@ func _on_ai_response(response: Dictionary):
 						var new_location = location_manager.generate_location(params)
 						location_manager.set_current_location(new_location)
 						return
-	
-		# ===== ЗАТЕМ ПРОВЕРЯЕМ СТРУКТУРИРОВАННУЮ КОМАНДУ =====
-		# Ищем команду в формате [команда:цель:параметр]
+		
+		# ПРОВЕРЯЕМ СТРУКТУРИРОВАННУЮ КОМАНДУ
 		var regex = RegEx.new()
 		regex.compile("\\[([a-z]+):([a-zа-я]+):(\\d+)\\]")
 		var match = regex.search(text)
-	
+		
 		if match:
 			var command = match.get_string(1)
 			var target = match.get_string(2)
 			var value = int(match.get_string(3))
-		
+			
 			print("Команда: ", command, ", цель: ", target, ", значение: ", value)
-		
+			
 			match command:
 				"attack":
 					_perform_attack_by_name(target)
@@ -262,12 +219,12 @@ func _on_ai_response(response: Dictionary):
 				"examine":
 					game_message.emit("Осмотр: " + target)
 			return
-	
-		# ===== ЕСЛИ НИ ТО, НИ ДРУГОЕ, ВЫВОДИМ КАК ТЕКСТ =====
+		
+		# ОБЫЧНЫЙ ТЕКСТ
 		if text and not text.is_empty():
 			game_message.emit(text)
 			print("AI говорит: ", text)
-	
+		
 		is_waiting_for_ai = false
 	
 	elif typ == "description":
@@ -279,9 +236,6 @@ func _on_ai_response(response: Dictionary):
 		is_waiting_for_ai = false
 		
 		if pending_action == "enemy_turn":
-			print("=== Обработка описания атаки врага ===")
-			print("Осталось атак для описания: ", _pending_attacks.size())
-			
 			if _pending_attacks.size() > 0:
 				var next_attack = _pending_attacks.pop_front()
 				print("Описываем следующую атаку врага: ", next_attack["name"])
@@ -292,12 +246,10 @@ func _on_ai_response(response: Dictionary):
 			else:
 				print("Все атаки врагов описаны, передаём ход игроку")
 				pending_action = ""
-				
 				if combat_state.units.get("player_1", {}).get("hp", 0) <= 0:
 					game_message.emit("Арагорн повержен! Игра окончена.")
 					game_over = true
 					return
-				
 				var enemies = combat_state.get_all_enemies()
 				if enemies.is_empty():
 					game_message.emit("Все враги повержены! Вы победили!")
