@@ -1,17 +1,8 @@
-# scripts/ai/dnd_rules.gd
 extends Node
 class_name DNDRules
 
-# Основные правила (краткая версия)
 static func get_combat_rules() -> String:
-	return """
-ПРАВИЛА БОЯ D&D:
-- Каждый ход: ДЕЙСТВИЕ (атака, заклинание) + ПЕРЕМЕЩЕНИЕ (до 3 клеток)
-- Атака: бросок d20 + бонус атаки >= Класс Доспеха (AC) цели → попадание
-- Урон: 1d6+2 (меч), 1d8+3 (двуручный меч)
-- Критическое попадание: при броске 20 → двойной урон
-- Критический промах: при броске 1 → автоматом промах
-"""
+	return "ПРАВИЛА БОЯ D&D: Каждый ход: ДЕЙСТВИЕ + ПЕРЕМЕЩЕНИЕ. Атака: бросок d20 + бонус атаки >= AC цели -> попадание."
 
 static func get_enemy_info(enemy_type: String) -> String:
 	var enemies = {
@@ -21,10 +12,10 @@ static func get_enemy_info(enemy_type: String) -> String:
 	}
 	return enemies.get(enemy_type, "Неизвестный враг")
 
-static func get_class_abilities(class_name: String) -> String:
+static func get_class_abilities(class_type: String) -> String:
 	var abilities = {
-		"warrior": "Воин: может использовать 'Яростный удар' (доп. +2 к урону)",
-		"mage": "Маг: может использовать 'Магическую стрелу' (дистанционная атака)",
-		"rogue": "Разбойник: может использовать 'Скрытность' (+5 к уклонению)"
+		"warrior": "Воин: Яростный удар (+2 к урону)",
+		"mage": "Маг: Магическая стрела (дистанционная атака)",
+		"rogue": "Разбойник: Скрытность (+5 к уклонению)"
 	}
-	return abilities.get(class_name, "Неизвестный класс")
+	return abilities.get(class_type, "Неизвестный класс")
