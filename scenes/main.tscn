@@ -55,33 +55,6 @@ layout_mode = 2
 [node name="SendButton" type="Button" parent="UIPanel/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 
-[node name="ZoomIn" type="Button" parent="UIPanel"]
-custom_minimum_size = Vector2(40, 30)
-layout_mode = 0
-offset_left = 320.0
-offset_top = 10.0
-offset_right = 367.0
-offset_bottom = 41.0
-text = "зум+"
-
-[node name="ZoomOut" type="Button" parent="UIPanel"]
-custom_minimum_size = Vector2(40, 30)
-layout_mode = 0
-offset_left = 370.0
-offset_top = 10.0
-offset_right = 413.0
-offset_bottom = 41.0
-text = "зум-"
-
-[node name="CenterCamera" type="Button" parent="UIPanel"]
-custom_minimum_size = Vector2(80, 30)
-layout_mode = 0
-offset_left = 420.0
-offset_top = 10.0
-offset_right = 542.0
-offset_bottom = 41.0
-text = "Центр камера"
-
 [node name="SkipTurnButton" type="Button" parent="."]
 custom_minimum_size = Vector2(100, 30)
 layout_mode = 0
