@@ -10,7 +10,7 @@ var current_request: HTTPRequest = null
 var PromptTemplates = preload("res://scripts/ai/prompt_templates.gd")
 var conversation_history: Array = []
 var max_history: int = 10  # Храним последние 10 сообщений
-
+var DNDRules = preload("res://data/dnd_rules/dnd_rules.gd")
 # Инструменты для function calling
 var tools = [
 	{
