@@ -183,16 +183,14 @@ func _on_ai_response(response: Dictionary):
 		for tool_call in tool_calls:
 			var function_name = tool_call["function"]["name"]
 			var arguments = JSON.parse_string(tool_call["function"]["arguments"])
-			
+		
 			match function_name:
 				"attack_enemy":
 					print("Атака врага: ", arguments["enemy_name"])
-					# Вызываем функцию атаки в grid_manager
-					_perform_attack_by_name(arguments["enemy_name"])
+					# Здесь вызываем функцию атаки
 				"move_player":
 					print("Перемещение: ", arguments["direction"])
-					# Вызываем функцию перемещения
-					_perform_move_by_direction(arguments["direction"])
+					# Здесь вызываем функцию перемещения
 		return
 	elif typ == "text":
 		if pending_action == "battle_summary":
