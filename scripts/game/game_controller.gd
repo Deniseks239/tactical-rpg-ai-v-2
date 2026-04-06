@@ -540,9 +540,8 @@ func _apply_map_data(map_data: Dictionary):
 		if unit_id != "player_1":
 			grid_state.remove_unit(unit_id)
 			combat_state.remove_unit(unit_id)
-	combat_state.initiative_order = ["player_1"]
 	
-	# Размещаем врагов
+	# Размещаем врагов (БЕЗ АВТОМАТИЧЕСКОГО БОЯ)
 	var enemies = map_data.get("enemies", [])
 	for enemy in enemies:
 		var enemy_id = "enemy_" + str(randi())
@@ -559,36 +558,14 @@ func _apply_map_data(map_data: Dictionary):
 				"attack_bonus": enemy.get("attack_bonus", 3),
 				"damage_dice": enemy.get("damage_dice", "1d6+2")
 			})
-			combat_state.initiative_order.append(enemy_id)
+			# НЕ добавляем врагов в initiative_order здесь!
 	
 	# Размещаем игрока
 	var player_start = map_data.get("player_start", [size/2, size/2])
 	grid_state.remove_unit("player_1")
 	grid_state.set_unit("player_1", "Арагорн", "player", player_start[0], player_start[1])
-	var npcs = map_data.get("npcs", [])
-	for npc in npcs:
-		var npc_id = "npc_" + str(randi())
-		var x = npc.get("x", 0)
-		var y = npc.get("y", 0)
-		if x >= 0 and x < grid_state.width and y >= 0 and y < grid_state.height:
-			grid_state.set_unit(npc_id, npc.get("name", "Житель"), "npc", x, y)
-			# NPC не добавляем в combat_state, они не участвуют в бою
 	
-	# Размещаем выходы (двери) — визуально помечаем клетки
-	var exits = map_data.get("exits", [])
-	if exits is Array:
-		for exit_data in exits:
-			if exit_data is Dictionary and exit_data.has("x") and exit_data.has("y"):
-				var x = exit_data.get("x", -1)
-				var y = exit_data.get("y", -1)
-				if x >= 0 and x < grid_state.width and y >= 0 and y < grid_state.height:
-					# Помечаем клетку как дверь
-					pass
-			else:
-				print("Пропускаем некорректный выход: ", exit_data)
-	
-	# Ждём один кадр, чтобы GridManager успел получить данные
-	await get_tree().process_frame
+	# Обновляем отображение
 	_refresh_grid()
 	
 	print("Карта применена: ", map_data.get("location_name", "Неизвестная локация"))
