@@ -150,7 +150,6 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 		response_received.emit({"type": "tool_calls", "data": tool_calls})
 		return
 	
-	# Если нет tool_calls, обрабатываем обычный текст
 	var content = response["message"].get("content", "")
 	content = content.strip_edges()
 	
@@ -169,6 +168,14 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 		content = content.substr(1, content.length() - 2)
 	
 	print("Контент после очистки (первые 500 символов):\n", content.substr(0, 500))
+	
+	# ===== НОВАЯ ПРОВЕРКА: структурированная команда =====
+	# Проверяем, не является ли ответ командой в формате [команда:цель:число]
+	if content.begins_with("[") and content.ends_with("]"):
+		print("Обнаружена команда в структурированном формате")
+		response_received.emit({"type": "text", "data": content})
+		return
+	# ===================================================
 	
 	# Пробуем распарсить JSON
 	var parsed = JSON.parse_string(content)
