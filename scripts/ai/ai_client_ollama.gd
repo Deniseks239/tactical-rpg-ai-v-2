@@ -131,10 +131,11 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 		error_occurred.emit("Invalid response format")
 		return
 	
-	var content = response["message"].get("content", "")
+	# Проверяем, есть ли tool_calls в ответе
 	if response["message"].has("tool_calls"):
 		print("AI вызвал инструменты!")
 		var tool_calls = response["message"]["tool_calls"]
+		# Просто отправляем сигнал с данными, а не вызываем функции здесь
 		response_received.emit({"type": "tool_calls", "data": tool_calls})
 		return
 	
@@ -156,6 +157,7 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	
 	# Пробуем распарсить JSON
 	var parsed = JSON.parse_string(content)
+	var content = response["message"].get("content", "")
 	
 	if parsed is Array:
 		print("Успешно распарсено как массив: ", parsed.size(), " действий")
