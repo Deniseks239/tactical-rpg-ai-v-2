@@ -49,12 +49,14 @@ func _center_camera():
 			camera.global_position = Vector2(map_width / 2, map_height / 2)
 
 func _on_send_pressed(text: String = ""):
+	print("SendButton нажата! Текст: ", input_field.text)
 	var message = text if text != "" else input_field.text
 	if message.is_empty():
+		print("Пустое сообщение")
 		return
 	add_message("Вы: " + message)
 	input_field.clear()
-	add_message("(Отправлено в AI)")
+	game_controller.process_player_action(message)
 
 func add_message(msg: String):
 	chat_display.add_text(msg + "\n")
