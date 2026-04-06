@@ -20,47 +20,10 @@ func _ready():
 	if input_field:
 		input_field.text_submitted.connect(_on_send_pressed)
 		print("InputField подключен")
-	
-	# Подключаем кнопки камеры
-	if zoom_in_button:
-		zoom_in_button.pressed.connect(_zoom_in)
-		print("ZoomIn подключена")
-	if zoom_out_button:
-		zoom_out_button.pressed.connect(_zoom_out)
-		print("ZoomOut подключена")
-	if center_button:
-		center_button.pressed.connect(_center_camera)
-		print("CenterCamera подключена")
+
 	if skip_turn_button:
 		skip_turn_button.pressed.connect(_skip_turn)
 		print("SkipTurnButton подключена")
-
-func _zoom_in():
-	print("ZoomIn нажата!")
-	var grid_manager = $GridContainer/GridManager
-	if grid_manager:
-		grid_manager.target_scale *= 0.9
-		grid_manager.target_scale = clamp(grid_manager.target_scale, 0.3, 2.0)
-		grid_manager.scale = Vector2(grid_manager.target_scale, grid_manager.target_scale)
-
-func _zoom_out():
-	print("ZoomOut нажата!")
-	var grid_manager = $GridContainer/GridManager
-	if grid_manager:
-		grid_manager.target_scale *= 1.1
-		grid_manager.target_scale = clamp(grid_manager.target_scale, 0.3, 2.0)
-		grid_manager.scale = Vector2(grid_manager.target_scale, grid_manager.target_scale)
-
-func _center_camera():
-	print("CenterCamera нажата!")
-	var grid_manager = $GridContainer/GridManager
-	if grid_manager and grid_manager.grid_state:
-		var map_width = grid_manager.grid_state.width * grid_manager.grid_state.cell_size
-		var map_height = grid_manager.grid_state.height * grid_manager.grid_state.cell_size
-		var zoom = grid_manager.target_scale
-		var center_x = (map_width / 2) * zoom
-		var center_y = (map_height / 2) * zoom
-		grid_manager.position = Vector2(center_x, center_y)
 
 func _skip_turn():
 	print("SkipTurnButton нажата!")
