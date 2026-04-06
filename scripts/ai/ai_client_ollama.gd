@@ -73,11 +73,7 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 			"num_predict": num_predict
 		}
 	}
-	
-	# Если это тест инструментов, добавляем tools
-	if request_type == "test_tools":
-		request_body["tools"] = tools
-	
+
 	var json_body = JSON.stringify(request_body)
 	var headers = ["Content-Type: application/json"]
 	current_request.request(API_URL, headers, HTTPClient.METHOD_POST, json_body)
@@ -115,7 +111,18 @@ func _build_system_prompt(context: Dictionary, additional: Dictionary, request_t
 		return PromptTemplates.get_location_prompt()
 	
 	elif request_type == "test_tools":
-		return "Ты можешь использовать инструменты: attack_enemy, move_player. Отвечай, вызывая их."
+		return """
+	Ты — помощник в RPG игре. Игрок пишет действие. Твоя задача — определить команду и цель.
+	
+	Отвечай ТОЛЬКО в формате:
+	[команда:цель:параметр]
+	
+	Примеры:
+	- "Атакую гоблина" → [attack:гоблин:0]
+	- "Бегу на север" → [move:север:1]
+	- "Осматриваю комнату" → [examine:комната:0]
+	
+	Сейчас игрок написал: """ + additional.get("input", "")
 	
 	# Возвращаем значение по умолчанию
 	return "Ты — мастер подземелий. Отвечай кратко."
