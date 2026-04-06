@@ -755,13 +755,10 @@ func skip_turn():
 	if game_over:
 		return
 	
+	# Только если боевой режим и ход игрока
 	if combat_state.mode == CombatState.GameMode.COMBAT and combat_state.is_player_turn():
-		print("Пропуск хода игрока в бою")
+		print("Пропуск хода")
 		combat_state.action_points = 0
 		end_player_turn()
-	elif combat_state.mode == CombatState.GameMode.PEACEFUL:
-		print("Сейчас мирный режим, пропуск хода не нужен")
-		game_message.emit("Вы не в бою")
 	else:
-		print("Сейчас ход врагов")
-		game_message.emit("Сейчас ход врагов, подождите")
+		game_message.emit("Нельзя пропустить ход")
