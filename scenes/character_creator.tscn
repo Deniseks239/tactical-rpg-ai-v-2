@@ -39,6 +39,7 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 16
 
 [node name="NameInput" type="LineEdit" parent="MainPanel/MainVBox/NameRow"]
+custom_minimum_size = Vector2(300, 20)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 placeholder_text = "Введите имя"
@@ -51,6 +52,7 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 16
 
 [node name="ClassSelect" type="OptionButton" parent="MainPanel/MainVBox/ClassRow"]
+custom_minimum_size = Vector2(300, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 
@@ -62,6 +64,7 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 16
 
 [node name="RaceSelect" type="OptionButton" parent="MainPanel/MainVBox/RaceRow"]
+custom_minimum_size = Vector2(300, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 
