@@ -767,3 +767,22 @@ func skip_turn():
 	else:
 		print("Мирный режим, пропуск хода не нужен")
 		game_message.emit("Вы не в бою")
+		
+func start_with_character(character: CharacterData):
+	print("Запуск игры с персонажем: ", character.name)
+	
+	# Обновляем данные игрока
+	grid_state.remove_unit("player_1")
+	grid_state.set_unit("player_1", character.name, "player", 3, 4)
+	
+	combat_state.units["player_1"] = {
+		"name": character.name,
+		"type": "player",
+		"hp": character.hp,
+		"max_hp": character.max_hp,
+		"ac": character.ac,
+		"attack_bonus": 5,
+		"inventory": character.inventory
+	}
+	
+	_start_game()
