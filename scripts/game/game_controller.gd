@@ -53,17 +53,19 @@ func _ready():
 	print("GameController готов. Ожидание создания персонажа.")
 
 func _start_game():
-	print("Запрос к AI на генерацию начальной локации")
+	print("Запрос к AI на текстовое описание начальной локации")
 	
+	# Простой промпт, который просит только текст, без JSON
 	var prompt = """
-Верни ТОЛЬКО JSON. Формат:
-{"action": "generate_location", "parameters": {"location_name": "название", "description": "описание", "biome": "dungeon", "size": 8, "enemies": [{"type": "goblin", "count": 2}], "exits": [], "player_start": [4, 4]}}
-Важно: exits должен быть пустым массивом [].
-Создай простую локацию. Размер 8x8. Используй не более 2 типов врагов.
+Ты — мастер подземелий. Опиши первую локацию для начала приключения.
+Локация должна быть небольшой (примерно 8x8 клеток), подземельем или пещерой.
+Опиши её в 2-3 предложениях.
+Упомяни, что там есть: например, каких врагов (гоблины, скелеты) и что есть выход (дверь).
+Не используй JSON, просто текст.
 """
 	
-	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "location")
-	
+	# Отправляем запрос с типом "location_text"
+	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "location_text")
 func _get_players_info() -> Array:
 	var players = []
 	for unit_id in combat_state.units.keys():
@@ -183,7 +185,7 @@ func _on_ai_response(response: Dictionary):
 	elif typ == "text":
 		var text = response["data"]
 		
-		# ПРОВЕРЯЕМ JSON ДЛЯ ГЕНЕРАЦИИ ЛОКАЦИИ
+		# ===== ПРОВЕРЯЕМ JSON ДЛЯ ГЕНЕРАЦИИ ЛОКАЦИИ (старый способ) =====
 		var json_start = text.find("{")
 		var json_end = text.rfind("}")
 		if json_start != -1 and json_end != -1 and json_end > json_start:
@@ -201,7 +203,7 @@ func _on_ai_response(response: Dictionary):
 						location_manager.set_current_location(new_location)
 						return
 		
-		# ПРОВЕРЯЕМ СТРУКТУРИРОВАННУЮ КОМАНДУ
+		# ===== ПРОВЕРЯЕМ СТРУКТУРИРОВАННУЮ КОМАНДУ =====
 		var regex = RegEx.new()
 		regex.compile("\\[([a-z]+):([a-zа-я]+):(\\d+)\\]")
 		var match = regex.search(text)
@@ -222,7 +224,19 @@ func _on_ai_response(response: Dictionary):
 					game_message.emit("Осмотр: " + target)
 			return
 		
-		# ОБЫЧНЫЙ ТЕКСТ
+		# ===== НОВЫЙ СПОСОБ: ТЕКСТОВАЯ ГЕНЕРАЦИЯ ЛОКАЦИИ =====
+		# Если текст не начинается с [ и не содержит JSON, это может быть описание локации
+		if not text.begins_with("[") and not text.begins_with("{"):
+			# Проверяем, есть ли у нас активный запрос на генерацию локации
+			# Простой способ: если мы в начале игры и ещё нет текущей локации
+			var location_manager = get_node("/root/LocationManagerAuto")
+			if location_manager and location_manager.current_location == null:
+				print("Получено текстовое описание локации, передаём в LocationManager")
+				var new_location = location_manager.generate_location(text)
+				location_manager.set_current_location(new_location)
+				return
+		
+		# ===== ОБЫЧНЫЙ ТЕКСТ =====
 		if text and not text.is_empty():
 			game_message.emit(text)
 			print("AI говорит: ", text)
