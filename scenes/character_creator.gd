@@ -12,12 +12,22 @@ var CharacterData = preload("res://scripts/characters/character_data.gd")
 var current_character: CharacterData = null
 
 func _ready():
+	print("CharacterClasses.classes: ", CharacterClasses.classes)
+	print("CharacterClasses.races: ", CharacterClasses.races)
+	
 	var panel = $MainPanel
 	if panel:
 		var screen_size = get_viewport().get_visible_rect().size
 		var panel_size = panel.size
 		panel.position = (screen_size - panel_size) / 2
 		print("Панель центрирована на ", panel.position)
+	# Увеличиваем ширину поля ввода
+	name_input.size.x = 200
+	name_input.anchor_right = 1.0  # растянуть на всю ширину
+	
+	# Увеличиваем ширину OptionButton
+	class_select.size.x = 200
+	race_select.size.x = 200
 	# Заполняем список классов
 	class_select.clear()
 	for class_key in CharacterClasses.classes.keys():
@@ -29,6 +39,8 @@ func _ready():
 	for race_key in CharacterClasses.races.keys():
 		var race_name = CharacterClasses.races[race_key]["name"]
 		race_select.add_item(race_name, race_key)
+	print("Классы в OptionButton: ", class_select.item_count)
+	print("Расы в OptionButton: ", race_select.item_count)
 	
 	# Подключаем сигналы
 	create_button.pressed.connect(_create_character)
