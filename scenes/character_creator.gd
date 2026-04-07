@@ -12,53 +12,34 @@ var CharacterData = preload("res://scripts/characters/character_data.gd")
 var current_character: CharacterData = null
 
 func _ready():
-	# Временные данные, если CharacterClasses не работает
-	var temp_classes = {
-		"warrior": "Воин",
-		"mage": "Маг",
-		"rogue": "Разбойник"
-	}
-	var temp_races = {
-		"human": "Человек",
-		"elf": "Эльф",
-		"dwarf": "Дворф"
-	}
-	
-	class_select.clear()
-	for key in temp_classes:
-		class_select.add_item(temp_classes[key], key)
-	
-	race_select.clear()
-	for key in temp_races:
-		race_select.add_item(temp_races[key], key)
+	# Центрирование панели
 	var panel = $MainPanel
 	if panel:
 		var screen_size = get_viewport().get_visible_rect().size
 		var panel_size = panel.size
 		panel.position = (screen_size - panel_size) / 2
 		print("Панель центрирована на ", panel.position)
-	# Увеличиваем ширину поля ввода
-	name_input.size.x = 200
-	name_input.anchor_right = 1.0  # растянуть на всю ширину
 	
-	# Увеличиваем ширину OptionButton
+	# Размеры элементов
+	name_input.size.x = 200
 	class_select.size.x = 200
 	race_select.size.x = 200
-	# Заполняем список классов
+	
+	# Заполняем список классов из CharacterClasses
 	class_select.clear()
 	for class_key in CharacterClasses.classes.keys():
 		var class_display_name = CharacterClasses.classes[class_key]["name"]
 		class_select.add_item(class_display_name, class_key)
-		print("CharacterClasses.classes: ", CharacterClasses.classes)
 	
-	# Заполняем список рас
+	# Заполняем список рас из CharacterClasses
 	race_select.clear()
 	for race_key in CharacterClasses.races.keys():
 		var race_name = CharacterClasses.races[race_key]["name"]
 		race_select.add_item(race_name, race_key)
+	
+	# Отладка
 	print("Классы в OptionButton: ", class_select.item_count)
 	print("Расы в OptionButton: ", race_select.item_count)
-	print("CharacterClasses.races: ", CharacterClasses.races)
 	
 	# Подключаем сигналы
 	create_button.pressed.connect(_create_character)
@@ -70,9 +51,9 @@ func _ready():
 	print("Character Creator готов")
 
 func _create_character():
-	var name = name_input.text.strip_edges()
-	if name.is_empty():
-		name = "Арагорн"
+	var player_name = name_input.text.strip_edges()
+	if player_name.is_empty():
+		player_name = "Арагорн"
 	
 	var class_key = class_select.get_selected_metadata()
 	var race_key = race_select.get_selected_metadata()
@@ -82,7 +63,7 @@ func _create_character():
 	
 	current_character = CharacterData.new()
 	current_character.id = "player_" + str(randi())
-	current_character.character_name = name
+	current_character.character_name = player_name
 	current_character.class_type = class_key
 	current_character.race = race_key
 	current_character.hp = class_info["base_hp"]
