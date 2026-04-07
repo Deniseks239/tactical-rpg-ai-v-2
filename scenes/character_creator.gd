@@ -15,8 +15,8 @@ func _ready():
 	# Заполняем список классов
 	class_select.clear()
 	for class_key in CharacterClasses.classes.keys():
-		var class_name = CharacterClasses.classes[class_key]["name"]
-		class_select.add_item(class_name, class_key)
+		var class_display_name = CharacterClasses.classes[class_key]["name"]
+		class_select.add_item(class_display_name, class_key)
 	
 	# Заполняем список рас
 	race_select.clear()
