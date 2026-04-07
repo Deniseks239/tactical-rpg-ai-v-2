@@ -71,7 +71,11 @@ func _create_character():
 	current_character.hp = class_info["base_hp"]
 	current_character.max_hp = class_info["base_hp"]
 	current_character.ac = class_info["base_ac"]
-	current_character.inventory = class_info["starting_items"]
+	
+	# Создаём копию массива, чтобы избежать проблем с присвоением
+	current_character.inventory = []
+	for item in class_info["starting_items"]:
+		current_character.inventory.append(item)
 	
 	# Применяем бонусы расы
 	current_character.strength = class_info.get("base_strength", 10) + race_info.get("bonus_strength", 0)
