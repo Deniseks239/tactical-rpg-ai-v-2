@@ -54,8 +54,8 @@ func _create_character():
 	if player_name.is_empty():
 		player_name = "Арагорн"
 	
-	var class_index = class_select.get_selected_index()
-	var race_index = race_select.get_selected_index()
+	var class_index = class_select.get_selected_id()
+	var race_index = race_select.get_selected_id()
 	
 	var class_key = CharacterClassesAuto.classes.keys()[class_index]
 	var race_key = CharacterClassesAuto.races.keys()[race_index]
