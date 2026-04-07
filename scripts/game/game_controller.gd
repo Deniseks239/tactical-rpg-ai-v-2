@@ -48,7 +48,8 @@ func _ready():
 	await get_tree().process_frame
 	
 	# Запускаем AI генерацию
-	_start_game()
+	#_start_game()
+	print("GameController готов. Ожидание создания персонажа.")
 
 func _start_game():
 	print("Запрос к AI на генерацию начальной локации")
