@@ -13,6 +13,7 @@ var game_over: bool = false
 var pending_events: Array = []  # события за ход игрока
 var _pending_attacks: Array = []
 var debug_mode: bool = true
+var current_player_name: String = "Арагорн"
 
 func _ready():
 	grid_state = GridState.new()
@@ -772,6 +773,9 @@ func skip_turn():
 func start_with_character(character: CharacterData):
 	print("Запуск игры с персонажем: ", character.character_name)
 	
+	# Сохраняем имя персонажа в переменную
+	current_player_name = character.character_name
+	
 	# Обновляем данные игрока
 	grid_state.remove_unit("player_1")
 	grid_state.set_unit("player_1", character.character_name, "player", 3, 4)
@@ -785,5 +789,5 @@ func start_with_character(character: CharacterData):
 		"attack_bonus": 5,
 		"inventory": character.inventory
 	}
-	
+		
 	_start_game()
