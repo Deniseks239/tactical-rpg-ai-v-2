@@ -593,26 +593,22 @@ func _apply_map_data(map_data: Dictionary):
 	
 	print("Карта применена: ", map_data.get("location_name", "Неизвестная локация"))
 func request_location_generation(location_context: Dictionary):
-	var prompt = {
-		"instruction": "Ты — мастер подземелий. Создай параметры для процедурной генерации локации.",
-		"context": location_context,
-		"output_format": {
-			"location_name": "название",
-			"description": "описание",
-			"biome": "forest/dungeon/city/cave",
-			"size": 16,
-			"features": [
-				{"type": "wall", "pattern": "perimeter", "thickness": 1},
-				{"type": "room", "x": 4, "y": 4, "width": 6, "height": 6}
-			],
-			"enemies": [{"type": "goblin", "count": 2}],
-			"npcs": [{"type": "villager", "count": 1, "dialogue": "Привет!"}],
-			"exits": [{"type": "door", "description": "Дверь в таверну"}],
-			"player_start": [8, 8]
-		}
-	}
+	print("Запрос на генерацию новой локации с контекстом: ", location_context)
 	
-	ai_client.send_request([], {}, prompt)
+	var prompt = """
+Ты — мастер подземелий. Опиши новую локацию для продолжения приключения.
+Предыдущая локация: """ + location_context.get("previous_location", "Неизвестно") + """
+Выход описан как: """ + location_context.get("exit_description", "дверь") + """
+
+Опиши новую локацию в 2-4 предложениях. Упомяни:
+- Какая это местность (пещера, лес, подземелье, город)
+- Какие враги там есть (гоблины, скелеты, орки)
+- Есть ли выход дальше
+
+Не используй JSON. Просто опиши текстом.
+"""
+	
+	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "location_text")
 
 func request_death_description(defender: String):
 	is_waiting_for_ai = true
