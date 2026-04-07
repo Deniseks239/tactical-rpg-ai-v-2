@@ -770,14 +770,14 @@ func skip_turn():
 		game_message.emit("Вы не в бою")
 		
 func start_with_character(character: CharacterData):
-	print("Запуск игры с персонажем: ", character.name)
+	print("Запуск игры с персонажем: ", character.character_name)
 	
 	# Обновляем данные игрока
 	grid_state.remove_unit("player_1")
-	grid_state.set_unit("player_1", character.name, "player", 3, 4)
+	grid_state.set_unit("player_1", character.character_name, "player", 3, 4)
 	
 	combat_state.units["player_1"] = {
-		"name": character.name,
+		"name": character.character_name,
 		"type": "player",
 		"hp": character.hp,
 		"max_hp": character.max_hp,
