@@ -1,6 +1,5 @@
 extends Control
 
-var CharacterClasses = preload("res://scripts/characters/character_classes.gd")
 var CharacterData = preload("res://scripts/characters/character_data.gd")
 
 @onready var name_input = $MainPanel/MainVBox/NameRow/NameInput
@@ -27,14 +26,14 @@ func _ready():
 	
 	# Заполняем список классов из CharacterClasses
 	class_select.clear()
-	for class_key in CharacterClasses.classes.keys():
-		var class_display_name = CharacterClasses.classes[class_key]["name"]
+	for class_key in CharacterClassesAuto.classes.keys():
+		var class_display_name = CharacterClassesAuto.classes[class_key]["name"]
 		class_select.add_item(class_display_name, class_key)
 	
 	# Заполняем список рас из CharacterClasses
 	race_select.clear()
-	for race_key in CharacterClasses.races.keys():
-		var race_name = CharacterClasses.races[race_key]["name"]
+	for race_key in CharacterClassesAuto.races.keys():
+		var race_name = CharacterClassesAuto.races[race_key]["name"]
 		race_select.add_item(race_name, race_key)
 	
 	# Отладка
@@ -58,8 +57,8 @@ func _create_character():
 	var class_key = class_select.get_selected_metadata()
 	var race_key = race_select.get_selected_metadata()
 	
-	var class_info = CharacterClasses.get_class_info(class_key)
-	var race_info = CharacterClasses.get_race_info(race_key)
+	var class_info = CharacterClassesAuto.get_class_info(class_key)
+	var race_info = CharacterClassesAuto.get_race_info(race_key)
 	
 	current_character = CharacterData.new()
 	current_character.id = "player_" + str(randi())
