@@ -19,21 +19,17 @@ script = ExtResource("1_0wfyh")
 [node name="GridManager" type="Node2D" parent="GridContainer"]
 script = ExtResource("1_o5qli")
 
-[node name="GameCamera" type="Camera2D" parent="."]
-zoom = Vector2(0.8, 0.8)
-
 [node name="UIPanel" type="Panel" parent="."]
 self_modulate = Color(1.018131, 1.018131, 1.018131, 0.003921569)
 layout_mode = 1
-anchors_preset = 15
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = -1610.0
-offset_bottom = -870.0
-grow_horizontal = 2
-grow_vertical = 2
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UIPanel"]
 layout_mode = 1
@@ -55,7 +51,7 @@ layout_mode = 2
 [node name="SendButton" type="Button" parent="UIPanel/VBoxContainer/HBoxContainer"]
 layout_mode = 2
 
-[node name="SkipTurnButton" type="Button" parent="."]
+[node name="SkipTurnButton" type="Button" parent="UIPanel"]
 custom_minimum_size = Vector2(100, 30)
 layout_mode = 0
 offset_left = 10.0
@@ -63,3 +59,6 @@ offset_top = 220.0
 offset_right = 146.0
 offset_bottom = 251.0
 text = "Пропустить ход"
+
+[node name="GameCamera" type="Camera2D" parent="."]
+zoom = Vector2(0.8, 0.8)
