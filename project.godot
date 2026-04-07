@@ -19,4 +19,4 @@ config/features=PackedStringArray("4.5", "Forward Plus")
 GameControllerAuto="*res://scripts/game/game_controller.gd"
 LocationManagerAuto="*res://scripts/game/location_manager.gd"
 CharacterClassesAuto="*res://scripts/characters/character_classes.gd"
-"СharacterDataAuto"="*res://scripts/characters/character_data.gd"
+CharacterDataAuto="*res://scripts/characters/character_data.gd"
