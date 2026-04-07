@@ -189,14 +189,22 @@ func _create_grid():
 					add_child(hp_label)
 
 func _on_cell_pressed(x: int, y: int):
-	print("Клик по клетке ", x, ",", y)
+	print("=== КЛИК ПО КЛЕТКЕ ", x, ",", y, " ===")
+	var pos_key = str(x) + "_" + str(y)
+	print("Юниты на карте: ", grid_state.units)
+	print("Есть ли юнит на ", pos_key, "? ", grid_state.units.has(pos_key))
 	
 	if game_controller.is_waiting_for_ai:
+		print("Ожидание ответа AI, действия временно заблокированы")
 		game_controller.game_message.emit("Подождите, AI описывает происходящее...")
 		return
 	
 	if game_controller.game_over:
 		print("Игра окончена")
+		return
+	
+	if not combat_state:
+		print("Ошибка: combat_state не инициализирован")
 		return
 	
 	# Проверка на выход (дверь)
@@ -205,32 +213,38 @@ func _on_cell_pressed(x: int, y: int):
 		if location_manager and location_manager.current_location:
 			for exit_data in location_manager.current_location.exits:
 				if exit_data.x == x and exit_data.y == y:
+					print("Вход в дверь: ", exit_data.description)
 					_enter_door(exit_data)
 					return
 	
-	# Проверяем, есть ли юнит на этой клетке
-	var pos_key = str(x) + "_" + str(y)
-	var unit_on_cell = grid_state.units.get(pos_key)
+	print("combat_state.mode = ", combat_state.mode)
+	print("combat_state.is_player_turn() = ", combat_state.is_player_turn())
 	
-	# Если уже выбран игрок
+	# Если уже выбран юнит
 	if selected_unit_id != "":
-		# Если на целевой клетке есть враг
-		if unit_on_cell and unit_on_cell["type"] == "enemy":
-			print("Попытка атаковать врага: ", unit_on_cell["name"])
-			_attack(selected_unit_id, unit_on_cell["id"])
-			return
-		# Иначе пытаемся переместиться
+		print("Попытка атаковать/переместить юнита: ", selected_unit_id)
+		var target_key = str(x) + "_" + str(y)
+		if grid_state.units.has(target_key):
+			var target = grid_state.units[target_key]
+			if target["type"] == "enemy":
+				_attack(selected_unit_id, target["id"])
+				return
 		_try_move_unit(selected_unit_id, x, y)
 		return
 	
-	# Если игрок не выбран, пытаемся выбрать юнита на клетке
-	if unit_on_cell and unit_on_cell["type"] == "player":
-		selected_unit_id = unit_on_cell["id"]
-		_highlight_available_moves(selected_unit_id)
-		print("Выбран игрок: ", selected_unit_id)
-		return
-
-# Новая функция для мирного перемещения (без ограничений)
+	# Если игрок не выбран, пытаемся выбрать юнита
+	print("Проверка юнита на клетке ", pos_key)
+	if grid_state.units.has(pos_key):
+		var unit = grid_state.units[pos_key]
+		print("Найден юнит: ", unit)
+		if unit["type"] == "player":
+			selected_unit_id = unit["id"]
+			_highlight_available_moves(selected_unit_id)
+			print("Выбран игрок: ", selected_unit_id)
+		else:
+			print("Это не игрок, тип: ", unit["type"])
+	else:
+		print("На клетке нет юнита")
 func _move_unit_free(unit_id: String, target_x: int, target_y: int):
 	var start_pos = grid_state.get_unit_position(unit_id)
 	if start_pos.x == -1:
