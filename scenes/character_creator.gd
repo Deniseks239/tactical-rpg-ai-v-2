@@ -12,8 +12,6 @@ var CharacterData = preload("res://scripts/characters/character_data.gd")
 var current_character: CharacterData = null
 
 func _ready():
-	print("CharacterClasses.classes: ", CharacterClasses.classes)
-	print("CharacterClasses.races: ", CharacterClasses.races)
 	
 	var panel = $MainPanel
 	if panel:
@@ -33,6 +31,7 @@ func _ready():
 	for class_key in CharacterClasses.classes.keys():
 		var class_display_name = CharacterClasses.classes[class_key]["name"]
 		class_select.add_item(class_display_name, class_key)
+		print("CharacterClasses.classes: ", CharacterClasses.classes)
 	
 	# Заполняем список рас
 	race_select.clear()
@@ -41,6 +40,7 @@ func _ready():
 		race_select.add_item(race_name, race_key)
 	print("Классы в OptionButton: ", class_select.item_count)
 	print("Расы в OptionButton: ", race_select.item_count)
+	print("CharacterClasses.races: ", CharacterClasses.races)
 	
 	# Подключаем сигналы
 	create_button.pressed.connect(_create_character)
