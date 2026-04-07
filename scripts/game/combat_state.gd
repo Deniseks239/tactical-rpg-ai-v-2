@@ -69,6 +69,8 @@ func spend_action_points(amount: int):
 func is_player_turn() -> bool:
 	if initiative_order.is_empty():
 		return false
+	if current_turn_index < 0 or current_turn_index >= initiative_order.size():
+		return false
 	var current_id = initiative_order[current_turn_index]
 	if units.has(current_id):
 		return units[current_id].get("type") == "player"
