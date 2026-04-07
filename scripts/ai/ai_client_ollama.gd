@@ -67,17 +67,18 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 		num_predict = 100
 	
 	# Формируем тело запроса
-	var request_body = {
+	var body = {
 		"model": model_name,
 		"messages": ollama_messages,
 		"stream": false,
 		"options": {
 			"temperature": 0.7,
-			"num_predict": num_predict
+			"num_predict": num_predict,
+			"num_ctx": 2048
 		}
 	}
 
-	var json_body = JSON.stringify(request_body)
+	var json_body = JSON.stringify(body)  # ← используем body, а не request_body
 	var headers = ["Content-Type: application/json"]
 	current_request.request(API_URL, headers, HTTPClient.METHOD_POST, json_body)
 
