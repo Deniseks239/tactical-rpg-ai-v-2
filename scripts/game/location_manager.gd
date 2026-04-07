@@ -3,6 +3,7 @@ class_name LocationManager
 
 var current_location: LocationData
 var locations: Dictionary = {}  # id -> LocationData
+const LocationParser = preload("res://scripts/game/location_parser.gd")
 
 func _ready():
 	# Создаём папку для сохранений, если её нет
@@ -10,17 +11,19 @@ func _ready():
 	if not dir.dir_exists("locations"):
 		dir.make_dir("locations")
 
-func generate_location(params: Dictionary) -> LocationData:
+func generate_location(description: String) -> LocationData:
+	# 1. Парсим описание в параметры для процедурной генерации
+	var params = LocationParser.parse_location_description(description)
+	
+	# 2. Создаём объект локации
 	var location = LocationData.new()
 	location.id = params.get("id", "loc_" + str(randi()))
-	location.name = params.get("name", "Неизвестная локация")
-	location.description = params.get("description", "")
+	location.name = params.get("location_name", "Неизвестная локация")
+	location.description = params.get("description", description) # Сохраняем оригинальный текст
 	location.parent_location_id = params.get("parent_location_id", "")
 	location.door_id = params.get("door_id", "")
-	location.width = params.get("width", 16)
-	location.height = params.get("height", 16)
 	
-	# Генерируем карту
+	# 3. Передаём параметры в процедурную генерацию карты
 	var map_data = ProceduralMap.generate(params)
 	location.tiles = map_data.get("tiles", [])
 	location.heights = map_data.get("heights", [])
@@ -30,11 +33,14 @@ func generate_location(params: Dictionary) -> LocationData:
 	location.exits = map_data.get("exits", [])
 	location.player_start_x = map_data.get("player_start", [8, 8])[0]
 	location.player_start_y = map_data.get("player_start", [8, 8])[1]
+	location.width = map_data.get("size", 16)
+	location.height = map_data.get("size", 16)
 	
-	# Сохраняем
+	# 4. Сохраняем локацию
 	locations[location.id] = location
 	location.save()
 	
+	print("LocationManager: Новая локация сгенерирована из описания: ", location.name)
 	return location
 
 func load_location(location_id: String) -> LocationData:
