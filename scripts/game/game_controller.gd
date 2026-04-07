@@ -571,6 +571,8 @@ func _apply_map_data(map_data: Dictionary):
 	var player_start = map_data.get("player_start", [size/2, size/2])
 	grid_state.remove_unit("player_1")
 	grid_state.set_unit("player_1", current_player_name, "player", player_start[0], player_start[1])
+	print("Игрок создан на позиции ", player_start[0], ",", player_start[1], " с именем ", current_player_name)
+	print("Все юниты после создания: ", grid_state.units)
 	
 	# Обновляем отображение
 	_refresh_grid()
