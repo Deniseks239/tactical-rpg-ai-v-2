@@ -1,8 +1,5 @@
 extends Control
 
-var CharacterClasses = preload("res://scripts/characters/character_classes.gd")
-var CharacterData = preload("res://scripts/characters/character_data.gd")
-
 @onready var name_input = $MainPanel/MainVBox/NameRow/NameInput
 @onready var class_select = $MainPanel/MainVBox/ClassRow/ClassSelect
 @onready var race_select = $MainPanel/MainVBox/RaceRow/RaceSelect
