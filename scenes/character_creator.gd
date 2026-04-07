@@ -1,5 +1,8 @@
 extends Control
 
+var CharacterClasses = preload("res://scripts/characters/character_classes.gd")
+var CharacterData = preload("res://scripts/characters/character_data.gd")
+
 @onready var name_input = $MainPanel/MainVBox/NameRow/NameInput
 @onready var class_select = $MainPanel/MainVBox/ClassRow/ClassSelect
 @onready var race_select = $MainPanel/MainVBox/RaceRow/RaceSelect
@@ -79,7 +82,7 @@ func _create_character():
 	
 	current_character = CharacterData.new()
 	current_character.id = "player_" + str(randi())
-	current_character.name = name
+	current_character.character_name = player_name
 	current_character.class_type = class_key
 	current_character.race = race_key
 	current_character.hp = class_info["base_hp"]
@@ -98,7 +101,7 @@ func _create_character():
 	create_button.disabled = true
 	start_button.disabled = false
 	
-	print("Создан персонаж: ", current_character.name, " (", class_info["name"], ", ", race_info["name"], ")")
+	print("Создан персонаж: ", current_character.character_name, " (", class_info["name"], ", ", race_info["name"], ")")
 
 func _start_game():
 	if current_character:
