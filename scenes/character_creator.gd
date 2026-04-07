@@ -82,7 +82,7 @@ func _create_character():
 	
 	current_character = CharacterData.new()
 	current_character.id = "player_" + str(randi())
-	current_character.character_name = player_name
+	current_character.character_name = name
 	current_character.class_type = class_key
 	current_character.race = race_key
 	current_character.hp = class_info["base_hp"]
