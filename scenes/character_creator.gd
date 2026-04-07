@@ -12,7 +12,25 @@ var CharacterData = preload("res://scripts/characters/character_data.gd")
 var current_character: CharacterData = null
 
 func _ready():
+	# Временные данные, если CharacterClasses не работает
+	var temp_classes = {
+		"warrior": "Воин",
+		"mage": "Маг",
+		"rogue": "Разбойник"
+	}
+	var temp_races = {
+		"human": "Человек",
+		"elf": "Эльф",
+		"dwarf": "Дворф"
+	}
 	
+	class_select.clear()
+	for key in temp_classes:
+		class_select.add_item(temp_classes[key], key)
+	
+	race_select.clear()
+	for key in temp_races:
+		race_select.add_item(temp_races[key], key)
 	var panel = $MainPanel
 	if panel:
 		var screen_size = get_viewport().get_visible_rect().size
