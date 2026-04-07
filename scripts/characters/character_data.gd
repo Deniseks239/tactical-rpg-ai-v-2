@@ -1,10 +1,10 @@
-extends Node
+extends Resource
 class_name CharacterData
 
 @export var id: String = ""
-@export var name: String = ""
-@export var class_type: String = ""  # warrior, mage, rogue, cleric
-@export var race: String = ""  # human, elf, dwarf, halfling
+@export var character_name: String = ""  # Переименуем, чтобы не конфликтовать с Node.name
+@export var class_type: String = ""
+@export var race: String = ""
 @export var level: int = 1
 @export var hp: int = 20
 @export var max_hp: int = 20
@@ -37,7 +37,7 @@ static func load_character(character_id: String) -> CharacterData:
 func to_dict() -> Dictionary:
 	return {
 		"id": id,
-		"name": name,
+		"name": character_name,
 		"class": class_type,
 		"race": race,
 		"level": level,
