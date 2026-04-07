@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="TacticalRPG_AI_v2"
-run/main_scene="uid://l04xd0kh3xup"
+run/main_scene="uid://dwinljl6mhimv"
 config/features=PackedStringArray("4.5", "Forward Plus")
 
 [autoload]
