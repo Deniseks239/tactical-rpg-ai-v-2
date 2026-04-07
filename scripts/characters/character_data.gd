@@ -19,6 +19,11 @@ class_name CharacterData
 @export var experience: int = 0
 
 func save() -> String:
+	# Создаём папку, если её нет
+	var dir = DirAccess.open("user://")
+	if not dir.dir_exists("characters"):
+		dir.make_dir("characters")
+		
 	var save_path = "user://characters/" + id + ".tres"
 	var error = ResourceSaver.save(self, save_path)
 	if error == OK:
@@ -27,7 +32,7 @@ func save() -> String:
 	else:
 		print("Ошибка сохранения: ", error)
 		return ""
-
+				
 static func load_character(character_id: String) -> CharacterData:
 	var path = "user://characters/" + character_id + ".tres"
 	if ResourceLoader.exists(path):
