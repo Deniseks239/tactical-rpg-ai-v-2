@@ -12,6 +12,12 @@ var CharacterData = preload("res://scripts/characters/character_data.gd")
 var current_character: CharacterData = null
 
 func _ready():
+	var panel = $MainPanel
+	if panel:
+		var screen_size = get_viewport().get_visible_rect().size
+		var panel_size = panel.size
+		panel.position = (screen_size - panel_size) / 2
+		print("Панель центрирована на ", panel.position)
 	# Заполняем список классов
 	class_select.clear()
 	for class_key in CharacterClasses.classes.keys():
