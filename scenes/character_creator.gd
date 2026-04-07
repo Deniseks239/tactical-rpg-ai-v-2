@@ -24,17 +24,17 @@ func _ready():
 	class_select.size.x = 200
 	race_select.size.x = 200
 	
-	# Заполняем список классов из CharacterClasses
+	# Заполняем список классов
 	class_select.clear()
 	for class_key in CharacterClassesAuto.classes.keys():
 		var class_display_name = CharacterClassesAuto.classes[class_key]["name"]
-		class_select.add_item(class_display_name, class_key)
+		class_select.add_item(class_display_name)
 	
-	# Заполняем список рас из CharacterClasses
+	# Заполняем список рас
 	race_select.clear()
 	for race_key in CharacterClassesAuto.races.keys():
 		var race_name = CharacterClassesAuto.races[race_key]["name"]
-		race_select.add_item(race_name, race_key)
+		race_select.add_item(race_name)
 	
 	# Отладка
 	print("Классы в OptionButton: ", class_select.item_count)
@@ -54,8 +54,11 @@ func _create_character():
 	if player_name.is_empty():
 		player_name = "Арагорн"
 	
-	var class_key = class_select.get_selected_metadata()
-	var race_key = race_select.get_selected_metadata()
+	var class_index = class_select.get_selected_index()
+	var race_index = race_select.get_selected_index()
+	
+	var class_key = CharacterClassesAuto.classes.keys()[class_index]
+	var race_key = CharacterClassesAuto.races.keys()[race_index]
 	
 	var class_info = CharacterClassesAuto.get_class_info(class_key)
 	var race_info = CharacterClassesAuto.get_race_info(race_key)
