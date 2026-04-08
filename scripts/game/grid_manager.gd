@@ -214,8 +214,24 @@ func _on_cell_pressed(x: int, y: int):
 	if selected_unit_id != "":
 		# Если кликнули на самого себя
 		if unit_on_cell and unit_on_cell["type"] == "player" and unit_on_cell["id"] == selected_unit_id:
-			print("Клик по самому себе, ничего не делаем")
-			return
+			# Проверяем, не стоит ли игрок на клетке с дверью
+			var location_manager = get_node("/root/LocationManagerAuto")
+			var is_on_door = false
+			var door_exit = null
+			if location_manager and location_manager.current_location:
+				for exit_data in location_manager.current_location.exits:
+					if exit_data.x == x and exit_data.y == y:
+						is_on_door = true
+						door_exit = exit_data
+						break
+			
+			if is_on_door:
+				print("Игрок стоит на двери, вход")
+				_enter_door(door_exit)
+				return
+			else:
+				print("Клик по самому себе, ничего не делаем")
+				return
 		
 		# Если на клетке враг — атакуем
 		if unit_on_cell and unit_on_cell["type"] == "enemy":
