@@ -361,6 +361,13 @@ func _highlight_available_moves(unit_id: String):
 	var pos = grid_state.get_unit_position(unit_id)
 	if pos.x == -1:
 		return
+		var player_highlight = ColorRect.new()
+		player_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		player_highlight.size = Vector2(grid_state.cell_size, grid_state.cell_size)
+		player_highlight.position = Vector2(pos.x * grid_state.cell_size, pos.y * grid_state.cell_size)
+		player_highlight.color = Color(1, 1, 0, 0.5)  # жёлтый полупрозрачный
+		add_child(player_highlight)
+		available_moves.append(player_highlight)
 	for dx in range(-combat_state.action_points, combat_state.action_points + 1):
 		for dy in range(-combat_state.action_points, combat_state.action_points + 1):
 			var nx = pos.x + dx
