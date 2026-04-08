@@ -205,28 +205,42 @@ func _on_cell_pressed(x: int, y: int):
 		print("Ошибка: combat_state не инициализирован")
 		return
 	
-	# 1. СНАЧАЛА ПРОВЕРЯЕМ, ЕСТЬ ЛИ ЮНИТ НА КЛЕТКЕ
 	var unit_on_cell = grid_state.units.get(pos_key)
 	
-	# 2. ЕСЛИ УЖЕ ВЫБРАН ИГРОК
+	# Если выбран игрок
 	if selected_unit_id != "":
-		# Если на целевой клетке есть враг — атакуем
+		# Если на клетке враг — атакуем
 		if unit_on_cell and unit_on_cell["type"] == "enemy":
 			print("Попытка атаковать врага: ", unit_on_cell["name"])
 			_attack(selected_unit_id, unit_on_cell["id"])
 			return
-		# Иначе пытаемся переместиться
+		
+		# Проверяем, не является ли клетка выходом (дверью)
+		var location_manager = get_node("/root/LocationManagerAuto")
+		var found_exit = null
+		if location_manager and location_manager.current_location:
+			for exit_data in location_manager.current_location.exits:
+				if exit_data.x == x and exit_data.y == y:
+					found_exit = exit_data
+					break
+		
+		if found_exit != null:
+			print("Вход в дверь")
+			_enter_door(found_exit)
+			return
+		
+		# Иначе перемещаемся
 		_try_move_unit(selected_unit_id, x, y)
 		return
 	
-	# 3. ЕСЛИ ИГРОК НЕ ВЫБРАН, ПЫТАЕМСЯ ВЫБРАТЬ ЮНИТА
+	# Если игрок не выбран, пытаемся выбрать юнита
 	if unit_on_cell and unit_on_cell["type"] == "player":
 		selected_unit_id = unit_on_cell["id"]
 		_highlight_available_moves(selected_unit_id)
 		print("Выбран игрок: ", selected_unit_id)
 		return
 	
-	# 4. ЕСЛИ НЕТ ЮНИТА, ПРОВЕРЯЕМ ВЫХОД (ДВЕРЬ)
+	# Если нет юнита, проверяем дверь
 	var location_manager = get_node("/root/LocationManagerAuto")
 	if location_manager and location_manager.current_location:
 		for exit_data in location_manager.current_location.exits:
@@ -297,6 +311,8 @@ func _attack(attacker_id: String, defender_id: String):
 			game_controller.game_message.emit(killed_name + " повержен!")
 		else:
 			refresh_grid()
+		if combat_state.get_all_enemies().is_empty():
+			game_controller.request_victory_description()
 	
 	# Добавляем событие в очередь
 	var event = {
