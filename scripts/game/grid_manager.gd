@@ -347,9 +347,12 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 			grid_state.remove_unit(unit_id)
 			grid_state.set_unit(unit_id, unit_data["name"], unit_data["type"], target_x, target_y)
 			combat_state.spend_action_points(distance)
-			# Обновляем подсветку
+			
+			# ОБНОВЛЯЕМ ПОДСВЕТКУ
 			_clear_highlight()
-			_highlight_available_moves(unit_id)
+			if combat_state.action_points > 0:
+				_highlight_available_moves(unit_id)
+			
 			refresh_grid()
 			print("Юнит перемещен на ", target_x, ",", target_y)
 			
