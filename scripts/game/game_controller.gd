@@ -337,10 +337,16 @@ func end_player_turn():
 	if debug_mode: print("=== end_player_turn вызван ===")
 	if game_over:
 		return
+	
+	# Если нет врагов, не продолжаем боевой цикл
+	var enemies = combat_state.get_all_enemies()
+	if enemies.is_empty():
+		print("Нет врагов, выходим")
+		return
+	
 	if pending_events.size() > 0:
 		request_battle_summary()
-	else:
-		_proceed_to_enemy_turn()
+		return
 	
 	# Находим GridManager
 	var root = get_tree().current_scene
@@ -362,27 +368,29 @@ func end_player_turn():
 	# Сбрасываем очки действий
 	combat_state.reset_action_points()
 	
-	var enemies = combat_state.get_all_enemies()
 	if debug_mode: print("Врагов перед ходом врагов: ", enemies.size())
 	
-	if enemies.is_empty():
-		game_message.emit("Все враги повержены! Вы победили!")
-		return
-	
-	# Переключаемся на ход врагов
-	combat_state.current_turn_index = 1
-	if combat_state.current_turn_index >= combat_state.initiative_order.size():
-		combat_state.current_turn_index = 0
-	
-	if debug_mode: print("current_turn_index = ", combat_state.current_turn_index)
-	
-	game_message.emit("Ход врагов...")
-	_simple_enemy_turn()
+	# Только в боевом режиме передаём ход врагам
+	if combat_state.mode == CombatState.GameMode.COMBAT:
+		combat_state.current_turn_index = 1
+		if combat_state.current_turn_index >= combat_state.initiative_order.size():
+			combat_state.current_turn_index = 0
+		
+		if debug_mode: print("current_turn_index = ", combat_state.current_turn_index)
+		
+		game_message.emit("Ход врагов...")
+		_simple_enemy_turn()
+	else:
+		print("Мирный режим, ход врагов не нужен")
 
 func _simple_enemy_turn():
 	print("=== _simple_enemy_turn вызван ===")
 	print("is_waiting_for_ai = ", is_waiting_for_ai)
 	print("game_over = ", game_over)
+	if combat_state.mode != CombatState.GameMode.COMBAT:
+		print("Не боевой режим, враги не атакуют")
+		return
+	
 	
 	if is_waiting_for_ai:
 		print("WARNING: is_waiting_for_ai = true, принудительно сбрасываем")
@@ -592,6 +600,16 @@ func _apply_map_data(map_data: Dictionary):
 	_refresh_grid()
 	
 	print("Карта применена: ", map_data.get("location_name", "Неизвестная локация"))
+	combat_state.mode = CombatState.GameMode.PEACEFUL
+	combat_state.phase = CombatState.Phase.EXPLORATION
+	combat_state.initiative_order = []
+	combat_state.current_turn_index = 0
+	combat_state.action_points = 3
+	
+	print("Режим: мирный. Враги есть, но не атакуют до первой атаки игрока.")
+	
+	# Обновляем отображение
+	_refresh_grid()
 func request_location_generation(location_context: Dictionary):
 	print("Запрос на генерацию новой локации с контекстом: ", location_context)
 	
@@ -803,3 +821,9 @@ func start_with_character(character: CharacterData):
 	}
 		
 	_start_game()
+func request_victory_description():
+	is_waiting_for_ai = true
+	game_message.emit("AI описывает победу...")
+	
+	var prompt = "Опиши эпичную победу над последним врагом одной короткой фразой."
+	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "description")
