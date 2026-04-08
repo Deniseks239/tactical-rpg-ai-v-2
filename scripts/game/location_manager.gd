@@ -19,7 +19,7 @@ func generate_location(description: String) -> LocationData:
 	var location = LocationData.new()
 	location.id = params.get("id", "loc_" + str(randi()))
 	location.name = params.get("location_name", "Неизвестная локация")
-	location.description = params.get("description", description) # Сохраняем оригинальный текст
+	location.description = params.get("description", description)
 	location.parent_location_id = params.get("parent_location_id", "")
 	location.door_id = params.get("door_id", "")
 	
@@ -39,6 +39,9 @@ func generate_location(description: String) -> LocationData:
 	# 4. Сохраняем локацию
 	locations[location.id] = location
 	location.save()
+	
+	# 5. ПРИМЕНЯЕМ ЛОКАЦИЮ (ВОТ ЭТО ВАЖНО!)
+	set_current_location(location)
 	
 	print("LocationManager: Новая локация сгенерирована из описания: ", location.name)
 	return location
