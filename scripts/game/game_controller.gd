@@ -224,11 +224,8 @@ func _on_ai_response(response: Dictionary):
 					game_message.emit("Осмотр: " + target)
 			return
 		
-		# ===== НОВЫЙ СПОСОБ: ТЕКСТОВАЯ ГЕНЕРАЦИЯ ЛОКАЦИИ =====
-		# Если текст не начинается с [ и не содержит JSON, это может быть описание локации
+		# ===== ТЕКСТОВАЯ ГЕНЕРАЦИЯ ЛОКАЦИИ =====
 		if not text.begins_with("[") and not text.begins_with("{"):
-			# Проверяем, есть ли у нас активный запрос на генерацию локации
-			# Простой способ: если мы в начале игры и ещё нет текущей локации
 			var location_manager = get_node("/root/LocationManagerAuto")
 			if location_manager and location_manager.current_location == null:
 				print("Получено текстовое описание локации, передаём в LocationManager")
@@ -269,6 +266,7 @@ func _on_ai_response(response: Dictionary):
 				var enemies = combat_state.get_all_enemies()
 				if enemies.is_empty():
 					game_message.emit("Все враги повержены! Вы победили!")
+					combat_state.mode = CombatState.GameMode.PEACEFUL
 				else:
 					combat_state.current_turn_index = 0
 					combat_state.reset_action_points()
@@ -280,6 +278,13 @@ func _on_ai_response(response: Dictionary):
 			pending_action = ""
 			if combat_state.action_points <= 0 and not game_over:
 				end_player_turn()
+		
+		elif pending_action == "battle_summary":
+			print("Суммарное описание хода получено (description)")
+			pending_action = ""
+			clear_events()
+			_proceed_to_enemy_turn()
+			return
 	
 	else:
 		print("Неизвестный тип ответа: ", typ)
@@ -338,17 +343,27 @@ func end_player_turn():
 	if game_over:
 		return
 	
-	# Если нет врагов, не продолжаем боевой цикл
 	var enemies = combat_state.get_all_enemies()
 	if enemies.is_empty():
-		print("Нет врагов, выходим")
+		print("Нет врагов, переключаемся в мирный режим")
+		combat_state.mode = CombatState.GameMode.PEACEFUL
+		combat_state.phase = CombatState.Phase.EXPLORATION
+		combat_state.initiative_order = []
+		combat_state.current_turn_index = 0
+		combat_state.action_points = 3
+		pending_action = ""
+		pending_events.clear()
+		game_message.emit("Все враги повержены! Вы победили!")
+		_refresh_grid()
 		return
 	
+	# Если есть события — отправляем на описание
 	if pending_events.size() > 0:
 		request_battle_summary()
+		# Ждём ответа, не продолжаем
 		return
 	
-	# Находим GridManager
+	# Сброс выделения
 	var root = get_tree().current_scene
 	var grid_manager = null
 	if root:
@@ -362,26 +377,16 @@ func end_player_turn():
 	if grid_manager:
 		grid_manager.selected_unit_id = ""
 		grid_manager._clear_highlight()
-	else:
-		print("GridManager не найден!")
 	
-	# Сбрасываем очки действий
 	combat_state.reset_action_points()
 	
-	if debug_mode: print("Врагов перед ходом врагов: ", enemies.size())
+	# Переключаемся на ход врагов
+	combat_state.current_turn_index = 1
+	if combat_state.current_turn_index >= combat_state.initiative_order.size():
+		combat_state.current_turn_index = 0
 	
-	# Только в боевом режиме передаём ход врагам
-	if combat_state.mode == CombatState.GameMode.COMBAT:
-		combat_state.current_turn_index = 1
-		if combat_state.current_turn_index >= combat_state.initiative_order.size():
-			combat_state.current_turn_index = 0
-		
-		if debug_mode: print("current_turn_index = ", combat_state.current_turn_index)
-		
-		game_message.emit("Ход врагов...")
-		_simple_enemy_turn()
-	else:
-		print("Мирный режим, ход врагов не нужен")
+	game_message.emit("Ход врагов...")
+	_simple_enemy_turn()
 
 func _simple_enemy_turn():
 	print("=== _simple_enemy_turn вызван ===")
