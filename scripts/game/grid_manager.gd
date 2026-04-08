@@ -209,32 +209,21 @@ func _on_cell_pressed(x: int, y: int):
 	print("DEBUG: selected_unit_id = ", selected_unit_id)
 	print("DEBUG: unit_on_cell = ", unit_on_cell)
 	print("DEBUG: combat_state.action_points = ", combat_state.action_points)
+	
 	# Если выбран игрок
 	if selected_unit_id != "":
+		# Если кликнули на самого себя
 		if unit_on_cell and unit_on_cell["type"] == "player" and unit_on_cell["id"] == selected_unit_id:
 			print("Клик по самому себе, ничего не делаем")
 			return
+		
 		# Если на клетке враг — атакуем
 		if unit_on_cell and unit_on_cell["type"] == "enemy":
 			print("Попытка атаковать врага: ", unit_on_cell["name"])
 			_attack(selected_unit_id, unit_on_cell["id"])
 			return
 		
-		# Проверяем, не является ли клетка выходом (дверью)
-		var location_manager = get_node("/root/LocationManagerAuto")
-		var found_exit = null
-		if location_manager and location_manager.current_location:
-			for exit_data in location_manager.current_location.exits:
-				if exit_data.x == x and exit_data.y == y:
-					found_exit = exit_data
-					break
-		
-		if found_exit != null:
-			print("Вход в дверь")
-			_enter_door(found_exit)
-			return
-		
-		# Иначе перемещаемся
+		# Пытаемся переместиться на целевую клетку
 		_try_move_unit(selected_unit_id, x, y)
 		return
 	
@@ -242,16 +231,23 @@ func _on_cell_pressed(x: int, y: int):
 	if unit_on_cell and unit_on_cell["type"] == "player":
 		selected_unit_id = unit_on_cell["id"]
 		_highlight_available_moves(selected_unit_id)
+		game_controller.game_message.emit("Выбран " + unit_on_cell["name"] + ". Доступно действий: " + str(combat_state.action_points))
 		print("Выбран игрок: ", selected_unit_id)
 		return
 	
-	# Если нет юнита, проверяем дверь
+	# Если нет юнита, проверяем дверь (только для взаимодействия, не для перемещения)
 	var location_manager = get_node("/root/LocationManagerAuto")
 	if location_manager and location_manager.current_location:
 		for exit_data in location_manager.current_location.exits:
 			if exit_data.x == x and exit_data.y == y:
-				print("Вход в дверь: ", exit_data.description)
-				_enter_door(exit_data)
+				# Проверяем, стоит ли игрок рядом с дверью
+				var player_pos = grid_state.get_unit_position("player_1")
+				var distance_to_door = abs(player_pos.x - x) + abs(player_pos.y - y)
+				if distance_to_door <= 1:
+					print("Вход в дверь")
+					_enter_door(exit_data)
+				else:
+					game_controller.game_message.emit("Нужно подойти ближе к двери")
 				return
 	
 	print("На клетке ", x, ",", y, " нет юнита и не дверь")
@@ -352,6 +348,15 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 			refresh_grid()
 			print("Юнит перемещен на ", target_x, ",", target_y)
 			
+			# Проверяем, не встал ли игрок на клетку с дверью
+			var location_manager = get_node("/root/LocationManagerAuto")
+			if location_manager and location_manager.current_location:
+				for exit_data in location_manager.current_location.exits:
+					if exit_data.x == target_x and exit_data.y == target_y:
+						print("Игрок встал на клетку с дверью")
+						game_controller.game_message.emit("Вы стоите перед дверью. Нажмите ещё раз, чтобы войти.")
+						break
+			
 			if combat_state.action_points <= 0:
 				selected_unit_id = ""
 				_clear_highlight()
@@ -363,19 +368,25 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 		print("Слишком далеко")
 
 func _highlight_available_moves(unit_id: String):
-	print("DEBUG: _highlight_available_moves вызван для ", unit_id)
-	print("DEBUG: action_points = ", combat_state.action_points)
 	_clear_highlight()
 	var pos = grid_state.get_unit_position(unit_id)
 	if pos.x == -1:
 		return
-		var player_highlight = ColorRect.new()
-		player_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		player_highlight.size = Vector2(grid_state.cell_size, grid_state.cell_size)
-		player_highlight.position = Vector2(pos.x * grid_state.cell_size, pos.y * grid_state.cell_size)
-		player_highlight.color = Color(1, 1, 0, 0.5)  # жёлтый полупрозрачный
-		add_child(player_highlight)
-		available_moves.append(player_highlight)
+	
+	print("DEBUG: _highlight_available_moves вызван для ", unit_id)
+	print("DEBUG: action_points = ", combat_state.action_points)
+	
+	# Подсвечиваем самого игрока жёлтым (поверх всего)
+	var player_highlight = ColorRect.new()
+	player_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	player_highlight.size = Vector2(grid_state.cell_size, grid_state.cell_size)
+	player_highlight.position = Vector2(pos.x * grid_state.cell_size, pos.y * grid_state.cell_size)
+	player_highlight.color = Color(1, 1, 0, 0.7)  # жёлтый, ярче
+	player_highlight.z_index = 10  # поверх сетки
+	add_child(player_highlight)
+	available_moves.append(player_highlight)
+	
+	# Подсвечиваем доступные для хода клетки
 	for dx in range(-combat_state.action_points, combat_state.action_points + 1):
 		for dy in range(-combat_state.action_points, combat_state.action_points + 1):
 			var nx = pos.x + dx
@@ -389,6 +400,7 @@ func _highlight_available_moves(unit_id: String):
 						highlight.size = Vector2(grid_state.cell_size, grid_state.cell_size)
 						highlight.position = Vector2(nx * grid_state.cell_size, ny * grid_state.cell_size)
 						highlight.color = Color(0, 1, 0, 0.3)
+						highlight.z_index = 5
 						add_child(highlight)
 						available_moves.append(highlight)
 
