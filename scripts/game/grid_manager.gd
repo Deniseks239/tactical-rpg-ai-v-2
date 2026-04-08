@@ -206,7 +206,9 @@ func _on_cell_pressed(x: int, y: int):
 		return
 	
 	var unit_on_cell = grid_state.units.get(pos_key)
-	
+	print("DEBUG: selected_unit_id = ", selected_unit_id)
+	print("DEBUG: unit_on_cell = ", unit_on_cell)
+	print("DEBUG: combat_state.action_points = ", combat_state.action_points)
 	# Если выбран игрок
 	if selected_unit_id != "":
 		if unit_on_cell and unit_on_cell["type"] == "player" and unit_on_cell["id"] == selected_unit_id:
@@ -268,16 +270,6 @@ func _move_unit_free(unit_id: String, target_x: int, target_y: int):
 		print("Клетка ", target_x, ",", target_y, " недоступна")
 
 func _attack(attacker_id: String, defender_id: String):
-	# Если игра в мирном режиме, переключаем в боевой
-	if combat_state.mode == CombatState.GameMode.PEACEFUL:
-		print("Начало боя!")
-		combat_state.mode = CombatState.GameMode.COMBAT
-		combat_state.phase = CombatState.Phase.COMBAT
-		combat_state.initiative_order = ["player_1"]
-		for enemy_id in combat_state.get_all_enemies():
-			combat_state.initiative_order.append(enemy_id)
-		combat_state.current_turn_index = 0
-		combat_state.reset_action_points()
 	var attacker_pos = grid_state.get_unit_position(attacker_id)
 	var defender_pos = grid_state.get_unit_position(defender_id)
 	
@@ -314,8 +306,6 @@ func _attack(attacker_id: String, defender_id: String):
 			game_controller.game_message.emit(killed_name + " повержен!")
 		else:
 			refresh_grid()
-		if combat_state.get_all_enemies().is_empty():
-			game_controller.request_victory_description()
 	
 	# Добавляем событие в очередь
 	var event = {
@@ -329,6 +319,12 @@ func _attack(attacker_id: String, defender_id: String):
 	game_controller.add_event(event)
 	
 	combat_state.spend_action_points(1)
+	
+	# ОБНОВЛЯЕМ ПОДСВЕТКУ ПОСЛЕ АТАКИ
+	if combat_state.action_points > 0:
+		_clear_highlight()
+		_highlight_available_moves(attacker_id)
+		refresh_grid()
 	
 	if combat_state.action_points <= 0:
 		selected_unit_id = ""
@@ -367,6 +363,8 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 		print("Слишком далеко")
 
 func _highlight_available_moves(unit_id: String):
+	print("DEBUG: _highlight_available_moves вызван для ", unit_id)
+	print("DEBUG: action_points = ", combat_state.action_points)
 	_clear_highlight()
 	var pos = grid_state.get_unit_position(unit_id)
 	if pos.x == -1:
