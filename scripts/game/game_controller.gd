@@ -239,6 +239,21 @@ func _on_ai_response(response: Dictionary):
 			print("AI говорит: ", text)
 		
 		is_waiting_for_ai = false
+		
+		# ===== ПРОВЕРКА: после получения описания передаём ход врагам =====
+		# Если это был ответ на суммарное описание хода (battle_summary)
+		if pending_action == "battle_summary":
+			print("Суммарное описание хода получено, передаём ход врагам")
+			pending_action = ""
+			clear_events()
+			_proceed_to_enemy_turn()
+			return
+		
+		# Если очки действий закончились и есть враги, но описание не запрашивалось
+		if combat_state.action_points <= 0 and combat_state.get_all_enemies().size() > 0:
+			print("Очки действий закончились, передаём ход врагам")
+			_proceed_to_enemy_turn()
+			return
 	
 	elif typ == "description":
 		var text = response["data"]
@@ -280,7 +295,7 @@ func _on_ai_response(response: Dictionary):
 				end_player_turn()
 		
 		elif pending_action == "battle_summary":
-			print("Суммарное описание хода получено (description)")
+			print("Суммарное описание хода получено (description), передаём ход врагам")
 			pending_action = ""
 			clear_events()
 			_proceed_to_enemy_turn()
@@ -360,33 +375,10 @@ func end_player_turn():
 	# Если есть события — отправляем на описание
 	if pending_events.size() > 0:
 		request_battle_summary()
-		# Ждём ответа, не продолжаем
 		return
 	
-	# Сброс выделения
-	var root = get_tree().current_scene
-	var grid_manager = null
-	if root:
-		if root.has_node("GridManager"):
-			grid_manager = root.get_node("GridManager")
-		elif root.has_node("GridContainer/GridManager"):
-			grid_manager = root.get_node("GridContainer/GridManager")
-		else:
-			grid_manager = root.find_child("GridManager", true, false)
-	
-	if grid_manager:
-		grid_manager.selected_unit_id = ""
-		grid_manager._clear_highlight()
-	
-	combat_state.reset_action_points()
-	
-	# Переключаемся на ход врагов
-	combat_state.current_turn_index = 1
-	if combat_state.current_turn_index >= combat_state.initiative_order.size():
-		combat_state.current_turn_index = 0
-	
-	game_message.emit("Ход врагов...")
-	_simple_enemy_turn()
+	# Если нет событий, сразу передаём ход врагам
+	_proceed_to_enemy_turn()
 
 func _simple_enemy_turn():
 	print("=== _simple_enemy_turn вызван ===")
@@ -667,8 +659,9 @@ func clear_events():
 	pending_events.clear()
 
 func _proceed_to_enemy_turn():
-	_pending_attacks.clear()
+	print("=== _proceed_to_enemy_turn вызван ===")
 	
+	# Сброс выделения
 	var root = get_tree().current_scene
 	var grid_manager = null
 	if root:
@@ -685,14 +678,11 @@ func _proceed_to_enemy_turn():
 	
 	combat_state.reset_action_points()
 	
-	var enemies = combat_state.get_all_enemies()
-	print("Врагов перед ходом врагов: ", enemies.size())
-	
-	if enemies.is_empty():
-		game_message.emit("Все враги повержены! Вы победили!")
-		return
-	
+	# Переключаемся на ход врагов
 	combat_state.current_turn_index = 1
+	if combat_state.current_turn_index >= combat_state.initiative_order.size():
+		combat_state.current_turn_index = 0
+	
 	print("current_turn_index = ", combat_state.current_turn_index)
 	
 	game_message.emit("Ход врагов...")
