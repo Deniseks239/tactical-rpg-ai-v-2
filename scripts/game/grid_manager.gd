@@ -209,6 +209,9 @@ func _on_cell_pressed(x: int, y: int):
 	
 	# Если выбран игрок
 	if selected_unit_id != "":
+		if unit_on_cell and unit_on_cell["type"] == "player" and unit_on_cell["id"] == selected_unit_id:
+			print("Клик по самому себе, ничего не делаем")
+			return
 		# Если на клетке враг — атакуем
 		if unit_on_cell and unit_on_cell["type"] == "enemy":
 			print("Попытка атаковать врага: ", unit_on_cell["name"])
@@ -344,12 +347,16 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 			grid_state.remove_unit(unit_id)
 			grid_state.set_unit(unit_id, unit_data["name"], unit_data["type"], target_x, target_y)
 			combat_state.spend_action_points(distance)
-			selected_unit_id = ""
+			# Обновляем подсветку
 			_clear_highlight()
+			_highlight_available_moves(unit_id)
 			refresh_grid()
 			print("Юнит перемещен на ", target_x, ",", target_y)
 			
 			if combat_state.action_points <= 0:
+				selected_unit_id = ""
+				_clear_highlight()
+				refresh_grid()
 				game_controller.end_player_turn()
 		else:
 			print("Клетка ", target_x, ",", target_y, " недоступна")
