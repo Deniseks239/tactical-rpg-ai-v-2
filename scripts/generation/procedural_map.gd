@@ -15,8 +15,13 @@ static func generate(params: Dictionary) -> Dictionary:
 	var size = params.get("size", 16)
 	var biome = params.get("biome", "dungeon")
 	var seed = params.get("seed", randi())
-	
-	
+	var location_type = params.get("location_type", "default")
+	var generator = params.get("generator", "default")
+
+	if generator == "city" or location_type == "city":
+		print("ProceduralMap: Генерация города")
+		return CityGenerator.generate_city(params)
+
 	# Инициализируем генератор случайных чисел
 	seed(seed)
 	
