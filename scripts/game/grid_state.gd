@@ -12,7 +12,18 @@ enum TileType { FLOOR,
 	GRASS,      # трава
 	STONE,      # каменный пол
 	DIRT,       # земля
-	WATER       # вода (непроходимо, например)
+	WATER,       # вода (непроходимо, например)
+	ROAD,           # дорога/улица
+	HOUSE_WALL,     # стена дома
+	HOUSE_DOOR,     # дверь дома
+	SHOP_COUNTER,   # прилавок
+	TAVERN_BAR,     # барная стойка
+	FORGE,          # горн
+	CASTLE_WALL,    # стена замка
+	CASTLE_GATE,    # ворота замка
+	PARK,           # парк/сад
+	FOUNTAIN,       # фонтан
+	STATUE          # статуя
 }
 
 @export var width: int = 8
