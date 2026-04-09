@@ -152,6 +152,28 @@ func _create_grid():
 					rect.color = Color(0.2, 0.5, 0.9, 1.0)
 				_:
 					rect.color = Color(0.4, 0.4, 0.4, 1.0)
+				GridState.TileType.ROAD:
+					rect.color = Color(0.5, 0.4, 0.3, 1.0)
+				GridState.TileType.HOUSE_WALL:
+					rect.color = Color(0.7, 0.5, 0.3, 1.0)
+				GridState.TileType.HOUSE_DOOR:
+					rect.color = Color(0.4, 0.2, 0.1, 1.0)
+				GridState.TileType.SHOP_COUNTER:
+					rect.color = Color(0.8, 0.6, 0.3, 1.0)
+				GridState.TileType.TAVERN_BAR:
+					rect.color = Color(0.6, 0.3, 0.1, 1.0)
+				GridState.TileType.FORGE:
+					rect.color = Color(0.9, 0.2, 0.1, 1.0)
+				GridState.TileType.CASTLE_WALL:
+					rect.color = Color(0.5, 0.5, 0.5, 1.0)
+				GridState.TileType.CASTLE_GATE:
+					rect.color = Color(0.3, 0.3, 0.3, 1.0)
+				GridState.TileType.PARK:
+					rect.color = Color(0.2, 0.6, 0.2, 1.0)
+				GridState.TileType.FOUNTAIN:
+					rect.color = Color(0.2, 0.4, 0.8, 1.0)
+				GridState.TileType.STATUE:
+					rect.color = Color(0.7, 0.7, 0.6, 1.0)
 			add_child(rect)
 			var is_exit = false
 			var location_manager = get_node("/root/LocationManagerAuto")
