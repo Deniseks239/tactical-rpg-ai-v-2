@@ -322,6 +322,19 @@ func _attack(attacker_id: String, defender_id: String):
 	
 	print(attacker["name"], " атакует ", defender["name"], " (бросок ", roll, "+", attack_bonus, " vs AC ", ac, ") = ", "ПОПАДАНИЕ" if is_hit else "ПРОМАХ")
 	
+	# ===== НОВЫЙ КОД: ВКЛЮЧАЕМ БОЕВОЙ РЕЖИМ =====
+	if combat_state.mode == CombatState.GameMode.PEACEFUL:
+		print("Начало боя!")
+		combat_state.mode = CombatState.GameMode.COMBAT
+		combat_state.phase = CombatState.Phase.COMBAT
+		combat_state.initiative_order = ["player_1"]
+		for enemy_id in combat_state.get_all_enemies():
+			if enemy_id not in combat_state.initiative_order:
+				combat_state.initiative_order.append(enemy_id)
+		combat_state.current_turn_index = 0
+		combat_state.reset_action_points()
+	# =========================================
+	
 	# Объявляем переменную damage здесь
 	var damage = 0
 	var was_killed = false
@@ -363,6 +376,9 @@ func _attack(attacker_id: String, defender_id: String):
 	if combat_state.action_points > 0:
 		_clear_highlight()
 		_highlight_available_moves(attacker_id)
+		refresh_grid()
+	else:
+		_clear_highlight()
 		refresh_grid()
 	
 	if combat_state.action_points <= 0:
