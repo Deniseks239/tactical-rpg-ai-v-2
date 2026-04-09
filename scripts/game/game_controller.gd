@@ -224,11 +224,12 @@ func _on_ai_response(response: Dictionary):
 					game_message.emit("Осмотр: " + target)
 			return
 		
-		# ===== ТЕКСТОВАЯ ГЕНЕРАЦИЯ ЛОКАЦИИ =====
+		# Текстовая генерация локации (всегда, если нет текущей локации или мы входим в дверь)
 		if not text.begins_with("[") and not text.begins_with("{"):
 			var location_manager = get_node("/root/LocationManagerAuto")
-			if location_manager and location_manager.current_location == null:
+			if location_manager and (location_manager.current_location == null or pending_action == "entering_door"):
 				print("Получено текстовое описание локации, передаём в LocationManager")
+				pending_action = ""  # сбрасываем флаг
 				var new_location = location_manager.generate_location(text)
 				location_manager.set_current_location(new_location)
 				return
