@@ -316,6 +316,11 @@ func _attack(attacker_id: String, defender_id: String):
 			combat_state.remove_unit(defender_id)
 			refresh_grid()
 			game_controller.game_message.emit(killed_name + " повержен!")
+	
+			# Проверяем, остались ли ещё враги
+			if combat_state.get_all_enemies().is_empty():
+				game_controller.request_victory_description()
+				return
 		else:
 			refresh_grid()
 	
