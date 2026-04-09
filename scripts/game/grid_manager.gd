@@ -493,14 +493,20 @@ func _refresh_grid_keep_camera():
 
 func _enter_door(exit_data: Dictionary):
 	print("Переход через дверь: ", exit_data.description)
-	game_controller.pending_action = "entering_door"  # Устанавливаем флаг
+	game_controller.pending_action = "entering_door"
+	game_controller.pending_return_location_id = game_controller.current_location.id if game_controller.current_location else ""
+	game_controller.pending_return_door_x = exit_data.get("x", 0)
+	game_controller.pending_return_door_y = exit_data.get("y", 0)
+	game_controller.pending_previous_location = game_controller.current_location.name if game_controller.current_location else "Неизвестно"
 	var location_manager = get_node("/root/LocationManagerAuto")
 	if not location_manager:
 		print("LocationManager не найден!")
 		return
 	
+	var current_location = location_manager.current_location
 	var target_id = exit_data.get("target_location_id", "")
 	
+	# Если есть целевая локация, загружаем её
 	if target_id != "":
 		var target_location = location_manager.load_location(target_id)
 		if target_location:
@@ -510,12 +516,19 @@ func _enter_door(exit_data: Dictionary):
 	
 	# Генерируем новую локацию
 	print("Генерация новой локации...")
-	game_controller.request_location_generation({
-		"parent_location": location_manager.current_location.id if location_manager.current_location else "",
+	
+	# Сохраняем информацию о том, откуда пришли
+	var door_info = {
+		"parent_location": current_location.id if current_location else "",
 		"door_id": exit_data.get("target_door_id", ""),
-		"previous_location": location_manager.current_location.name if location_manager.current_location else "Неизвестно",
-		"exit_description": exit_data.description
-	})
+		"previous_location": current_location.name if current_location else "Неизвестно",
+		"exit_description": exit_data.description,
+		"return_door_x": exit_data.get("x", 0),  # позиция двери в текущей локации
+		"return_door_y": exit_data.get("y", 0),
+		"return_location_id": current_location.id if current_location else ""
+	}
+	
+	game_controller.request_location_generation(door_info)
 func _show_all_walkable_cells(unit_id: String):
 	_clear_highlight()
 	var pos = grid_state.get_unit_position(unit_id)
@@ -554,5 +567,25 @@ func _update_highlight():
 	if combat_state.mode == CombatState.GameMode.PEACEFUL:
 		_show_all_walkable_cells(selected_unit_id)
 	else:
+		# В боевом режиме показываем подсветку, даже если action_points = 0
+		# (только подсветка самого игрока)
 		if combat_state.action_points > 0:
 			_highlight_available_moves(selected_unit_id)
+		else:
+			# Показываем только жёлтую подсветку игрока
+			_highlight_player_only(selected_unit_id)
+func _highlight_player_only(unit_id: String):
+	_clear_highlight()
+	var pos = grid_state.get_unit_position(unit_id)
+	if pos.x == -1:
+		return
+	
+	# Только жёлтая подсветка игрока
+	var player_highlight = ColorRect.new()
+	player_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	player_highlight.size = Vector2(grid_state.cell_size, grid_state.cell_size)
+	player_highlight.position = Vector2(pos.x * grid_state.cell_size, pos.y * grid_state.cell_size)
+	player_highlight.color = Color(1, 1, 0, 0.7)
+	player_highlight.z_index = 10
+	add_child(player_highlight)
+	available_moves.append(player_highlight)
