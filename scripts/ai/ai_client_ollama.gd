@@ -64,7 +64,9 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 	if request_type == "location":
 		num_predict = 6000
 	elif request_type == "death":
-		num_predict = 100
+		num_predict = 50
+	else:
+		num_predict = 100   # уменьшаем с 200
 	
 	# Формируем тело запроса
 	var body = {
@@ -74,7 +76,8 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 		"options": {
 			"temperature": 0.7,
 			"num_predict": num_predict,
-			"num_ctx": 2048
+			"num_ctx": 1024,
+			"num_gpu": 70
 		}
 	}
 
