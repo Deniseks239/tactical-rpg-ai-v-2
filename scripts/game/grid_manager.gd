@@ -476,19 +476,19 @@ func _refresh_grid_keep_camera():
 
 func _enter_door(exit_data: Dictionary):
 	print("Переход через дверь: ", exit_data.description)
-	
+	game_controller.pending_action = "entering_door"  # Устанавливаем флаг
 	var location_manager = get_node("/root/LocationManagerAuto")
 	if not location_manager:
-		print("LocationManagerAuto не найден!")
+		print("LocationManager не найден!")
 		return
 	
 	var target_id = exit_data.get("target_location_id", "")
 	
 	if target_id != "":
-		# Загружаем существующую локацию
 		var target_location = location_manager.load_location(target_id)
 		if target_location:
 			location_manager.set_current_location(target_location)
+			game_controller.pending_action = ""
 			return
 	
 	# Генерируем новую локацию
