@@ -225,8 +225,10 @@ func _on_ai_response(response: Dictionary):
 			return
 		
 		# Текстовая генерация локации (всегда, если нет текущей локации или мы входим в дверь)
+		# Текстовая генерация локации
 		if not text.begins_with("[") and not text.begins_with("{"):
 			var location_manager = get_node("/root/LocationManagerAuto")
+			# Если нет текущей локации или мы входим в дверь
 			if location_manager and (location_manager.current_location == null or pending_action == "entering_door"):
 				print("Получено текстовое описание локации, передаём в LocationManager")
 				pending_action = ""  # сбрасываем флаг
