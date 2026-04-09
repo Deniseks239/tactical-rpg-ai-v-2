@@ -350,9 +350,14 @@ func _attack(attacker_id: String, defender_id: String):
 			refresh_grid()
 			game_controller.game_message.emit(killed_name + " повержен!")
 			
+			# Проверяем, остались ли ещё враги
 			if combat_state.get_all_enemies().is_empty():
 				game_controller.request_victory_description()
+				_update_highlight()
 				return
+			else:
+				_update_highlight()
+				refresh_grid()
 		else:
 			refresh_grid()
 	
@@ -367,6 +372,7 @@ func _attack(attacker_id: String, defender_id: String):
 	game_controller.add_event(event)
 	
 	combat_state.spend_action_points(1)
+	print("DEBUG: action_points после атаки = ", combat_state.action_points)
 	
 	# ОБНОВЛЯЕМ ПОДСВЕТКУ ПОСЛЕ АТАКИ
 	_update_highlight()
@@ -391,7 +397,7 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 			grid_state.remove_unit(unit_id)
 			grid_state.set_unit(unit_id, unit_data["name"], unit_data["type"], target_x, target_y)
 			refresh_grid()
-			_update_highlight()  # Обновляем подсветку после перемещения
+			_update_highlight()
 			print("Юнит свободно перемещен на ", target_x, ",", target_y)
 			return
 		else:
@@ -399,6 +405,7 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 			return
 	
 	# Боевой режим — с очками действий
+	print("DEBUG БОЙ: distance = ", distance, ", action_points = ", combat_state.action_points)
 	if distance <= combat_state.action_points:
 		if grid_state.is_walkable(target_x, target_y, unit_id):
 			var unit_data = grid_state.units[str(start_pos.x) + "_" + str(start_pos.y)]
@@ -406,7 +413,7 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 			grid_state.set_unit(unit_id, unit_data["name"], unit_data["type"], target_x, target_y)
 			combat_state.spend_action_points(distance)
 			
-			_update_highlight()  # Обновляем подсветку после перемещения
+			_update_highlight()
 			refresh_grid()
 			print("Юнит перемещен на ", target_x, ",", target_y)
 			
@@ -418,7 +425,7 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 		else:
 			print("Клетка ", target_x, ",", target_y, " недоступна")
 	else:
-		print("Слишком далеко")
+		print("Слишком далеко: расстояние ", distance, " > ", combat_state.action_points)
 
 func _highlight_available_moves(unit_id: String):
 	_clear_highlight()
