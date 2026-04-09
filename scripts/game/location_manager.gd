@@ -11,11 +11,18 @@ func _ready():
 	if not dir.dir_exists("locations"):
 		dir.make_dir("locations")
 
-func generate_location(description: String) -> LocationData:
+func generate_location(description: String, additional_params: Dictionary = {}) -> LocationData:
 	# 1. Парсим описание в параметры для процедурной генерации
 	var params = LocationParser.parse_location_description(description)
 	
-	# 2. Создаём объект локации
+	# 2. Добавляем дополнительные параметры (для обратной двери)
+	if additional_params.has("return_location_id"):
+		params["return_location_id"] = additional_params["return_location_id"]
+		params["return_door_x"] = additional_params.get("return_door_x", 0)
+		params["return_door_y"] = additional_params.get("return_door_y", 0)
+		params["previous_location"] = additional_params.get("previous_location", "Неизвестно")
+	
+	# 3. Создаём объект локации
 	var location = LocationData.new()
 	location.id = params.get("id", "loc_" + str(randi()))
 	location.name = params.get("location_name", "Неизвестная локация")
@@ -23,7 +30,7 @@ func generate_location(description: String) -> LocationData:
 	location.parent_location_id = params.get("parent_location_id", "")
 	location.door_id = params.get("door_id", "")
 	
-	# 3. Передаём параметры в процедурную генерацию карты
+	# 4. Передаём параметры в процедурную генерацию карты
 	var map_data = ProceduralMap.generate(params)
 	location.tiles = map_data.get("tiles", [])
 	location.heights = map_data.get("heights", [])
@@ -36,11 +43,31 @@ func generate_location(description: String) -> LocationData:
 	location.width = map_data.get("size", 16)
 	location.height = map_data.get("size", 16)
 	
-	# 4. Сохраняем локацию
+	# 5. Если есть информация о возврате, добавляем выход обратно
+	if additional_params.has("return_location_id") and additional_params["return_location_id"] != "":
+		var return_door = {
+			"x": additional_params.get("return_door_x", 0),
+			"y": additional_params.get("return_door_y", 0),
+			"description": "Обратный проход в " + additional_params.get("previous_location", "предыдущую локацию"),
+			"target_location_id": additional_params["return_location_id"]
+		}
+		
+		# Проверяем, нет ли уже такого выхода
+		var already_has = false
+		for exit in location.exits:
+			if exit.get("target_location_id") == additional_params["return_location_id"]:
+				already_has = true
+				break
+		
+		if not already_has:
+			location.exits.append(return_door)
+			print("LocationManager: Добавлен обратный выход в ", additional_params["previous_location"])
+	
+	# 6. Сохраняем локацию
 	locations[location.id] = location
 	location.save()
 	
-	# 5. ПРИМЕНЯЕМ ЛОКАЦИЮ (ВОТ ЭТО ВАЖНО!)
+	# 7. Применяем локацию
 	set_current_location(location)
 	
 	print("LocationManager: Новая локация сгенерирована из описания: ", location.name)
