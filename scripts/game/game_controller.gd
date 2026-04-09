@@ -14,6 +14,10 @@ var pending_events: Array = []  # события за ход игрока
 var _pending_attacks: Array = []
 var debug_mode: bool = true
 var current_player_name: String = "Арагорн"
+var pending_return_location_id: String = ""
+var pending_return_door_x: int = 0
+var pending_return_door_y: int = 0
+var pending_previous_location: String = ""
 
 func _ready():
 	grid_state = GridState.new()
@@ -199,7 +203,7 @@ func _on_ai_response(response: Dictionary):
 					print("Генерация локации с параметрами: ", params)
 					var location_manager = get_node("/root/LocationManagerAuto")
 					if location_manager:
-						var new_location = location_manager.generate_location(params)
+						var new_location = location_manager.generate_location(text, {"return_location_id": pending_return_location_id, "return_door_x": pending_return_door_x, "return_door_y": pending_return_door_y, "previous_location": pending_previous_location})
 						location_manager.set_current_location(new_location)
 						return
 		
@@ -466,9 +470,10 @@ func _simple_enemy_turn():
 			
 			if is_hit:
 				var damage = combat_state.calculate_damage(enemy.get("damage_dice", "1d6+2"))
+				var old_hp = combat_state.units["player_1"]["hp"]
 				var new_hp = combat_state.units["player_1"]["hp"] - damage
 				combat_state.units["player_1"]["hp"] = new_hp
-				
+				print("DEBUG: Враг ", enemy["name"], " нанёс ", damage, " урона. HP было ", old_hp, ", стало ", new_hp)
 				attacks_to_describe.append({
 					"name": enemy["name"],
 					"damage": damage,
@@ -626,7 +631,7 @@ func request_location_generation(location_context: Dictionary):
 Не используй JSON. Просто опиши текстом.
 """
 	
-	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "location_text")
+	ai_client.send_request([{"role": "user", "content": prompt}], {}, location_context, "location_text")
 
 func request_death_description(defender: String):
 	is_waiting_for_ai = true
