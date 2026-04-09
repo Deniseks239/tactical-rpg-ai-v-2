@@ -57,7 +57,29 @@ static func parse_location_description(description: String) -> Dictionary:
 	if "колодец" in lower_desc:
 		params["features"] = params.get("features", [])
 		params["features"].append({"type": "water", "radius": 1})
+		# Определение города
+	if "город" in lower_desc or "столиц" in lower_desc or "городе" in lower_desc:
+		params["location_type"] = "city"
+		params["generator"] = "city"
+		params["size"] = 48
+		params["width"] = 48
+		params["height"] = 48
 	
+		# Парсим опасность
+		if "опасн" in lower_desc or "страж" in lower_desc:
+			params["danger_level"] = 2
+		else:
+			params["danger_level"] = 1
+	
+		# Определяем кварталы
+		var districts = ["residential", "residential", "market"]
+		if "богат" in lower_desc or "знат" in lower_desc:
+			districts.append("noble")
+		if "ремесл" in lower_desc or "кузн" in lower_desc:
+			districts.append("industrial")
+		params["districts"] = districts
+	
+		return params
 	# ВАЖНО: Логируем результат, чтобы видеть, что напарсили
 	print("LocationParser: Извлечены параметры -> ", params)
 	return params
