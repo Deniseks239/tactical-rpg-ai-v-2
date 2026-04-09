@@ -369,14 +369,12 @@ func _attack(attacker_id: String, defender_id: String):
 	combat_state.spend_action_points(1)
 	
 	# ОБНОВЛЯЕМ ПОДСВЕТКУ ПОСЛЕ АТАКИ
-	_clear_highlight()
-	if combat_state.action_points > 0:
-		_highlight_available_moves(attacker_id)
+	_update_highlight()
 	refresh_grid()
 	
 	if combat_state.action_points <= 0:
 		selected_unit_id = ""
-		_clear_highlight()
+		_update_highlight()
 		refresh_grid()
 		game_controller.end_player_turn()
 
@@ -393,6 +391,7 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 			grid_state.remove_unit(unit_id)
 			grid_state.set_unit(unit_id, unit_data["name"], unit_data["type"], target_x, target_y)
 			refresh_grid()
+			_update_highlight()  # Обновляем подсветку после перемещения
 			print("Юнит свободно перемещен на ", target_x, ",", target_y)
 			return
 		else:
@@ -407,15 +406,13 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 			grid_state.set_unit(unit_id, unit_data["name"], unit_data["type"], target_x, target_y)
 			combat_state.spend_action_points(distance)
 			
-			_clear_highlight()
-			if combat_state.action_points > 0:
-				_highlight_available_moves(unit_id)
+			_update_highlight()  # Обновляем подсветку после перемещения
 			refresh_grid()
 			print("Юнит перемещен на ", target_x, ",", target_y)
 			
 			if combat_state.action_points <= 0:
 				selected_unit_id = ""
-				_clear_highlight()
+				_update_highlight()
 				refresh_grid()
 				game_controller.end_player_turn()
 		else:
@@ -455,7 +452,7 @@ func _highlight_available_moves(unit_id: String):
 						highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
 						highlight.size = Vector2(grid_state.cell_size, grid_state.cell_size)
 						highlight.position = Vector2(nx * grid_state.cell_size, ny * grid_state.cell_size)
-						highlight.color = Color(0, 1, 0, 0.3)
+						highlight.color = Color(0, 1, 0, 0.5)
 						highlight.z_index = 5
 						add_child(highlight)
 						available_moves.append(highlight)
@@ -528,7 +525,7 @@ func _show_all_walkable_cells(unit_id: String):
 	add_child(player_highlight)
 	available_moves.append(player_highlight)
 	
-	# Подсвечиваем все доступные клетки на карте (без ограничений)
+	# Подсвечиваем все доступные клетки на карте (слабый зелёный)
 	for x in range(grid_state.width):
 		for y in range(grid_state.height):
 			if x == pos.x and y == pos.y:
@@ -538,7 +535,7 @@ func _show_all_walkable_cells(unit_id: String):
 				highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
 				highlight.size = Vector2(grid_state.cell_size, grid_state.cell_size)
 				highlight.position = Vector2(x * grid_state.cell_size, y * grid_state.cell_size)
-				highlight.color = Color(0, 1, 0, 0.3)
+				highlight.color = Color(0, 1, 0, 0.15)  # более прозрачный для мирного режима
 				highlight.z_index = 5
 				add_child(highlight)
 				available_moves.append(highlight)
