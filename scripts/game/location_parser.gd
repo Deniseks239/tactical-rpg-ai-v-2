@@ -82,6 +82,10 @@ static func parse_location_description(description: String) -> Dictionary:
 		return params
 	# ВАЖНО: Логируем результат, чтобы видеть, что напарсили
 	print("LocationParser: Извлечены параметры -> ", params)
+	if params["exits"].is_empty() and params.get("location_type") != "city":
+		var size = params.get("size", 8)
+		params["exits"].append({"x": size - 1, "y": size / 2, "description": "Тёмный проход"})
+		print("LocationParser: Добавлен выход по умолчанию")
 	return params
 
 # Вспомогательные функции-парсеры
