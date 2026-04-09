@@ -16,6 +16,7 @@ static func generate(params: Dictionary) -> Dictionary:
 	var biome = params.get("biome", "dungeon")
 	var seed = params.get("seed", randi())
 	
+	
 	# Инициализируем генератор случайных чисел
 	seed(seed)
 	
