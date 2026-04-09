@@ -268,8 +268,8 @@ func _on_cell_pressed(x: int, y: int):
 	# Если игрок не выбран, пытаемся выбрать юнита
 	if unit_on_cell and unit_on_cell["type"] == "player":
 		selected_unit_id = unit_on_cell["id"]
-		_highlight_available_moves(selected_unit_id)
-		game_controller.game_message.emit("Выбран " + unit_on_cell["name"] + ". Доступно действий: " + str(combat_state.action_points))
+		_update_highlight()
+		game_controller.game_message.emit("Выбран " + unit_on_cell["name"])
 		print("Выбран игрок: ", selected_unit_id)
 		return
 	
@@ -322,7 +322,7 @@ func _attack(attacker_id: String, defender_id: String):
 	
 	print(attacker["name"], " атакует ", defender["name"], " (бросок ", roll, "+", attack_bonus, " vs AC ", ac, ") = ", "ПОПАДАНИЕ" if is_hit else "ПРОМАХ")
 	
-	# ===== НОВЫЙ КОД: ВКЛЮЧАЕМ БОЕВОЙ РЕЖИМ =====
+	# Включаем боевой режим при первой атаке
 	if combat_state.mode == CombatState.GameMode.PEACEFUL:
 		print("Начало боя!")
 		combat_state.mode = CombatState.GameMode.COMBAT
@@ -333,9 +333,7 @@ func _attack(attacker_id: String, defender_id: String):
 				combat_state.initiative_order.append(enemy_id)
 		combat_state.current_turn_index = 0
 		combat_state.reset_action_points()
-	# =========================================
 	
-	# Объявляем переменную damage здесь
 	var damage = 0
 	var was_killed = false
 	
@@ -351,15 +349,13 @@ func _attack(attacker_id: String, defender_id: String):
 			combat_state.remove_unit(defender_id)
 			refresh_grid()
 			game_controller.game_message.emit(killed_name + " повержен!")
-	
-			# Проверяем, остались ли ещё враги
+			
 			if combat_state.get_all_enemies().is_empty():
 				game_controller.request_victory_description()
 				return
 		else:
 			refresh_grid()
 	
-	# Добавляем событие в очередь
 	var event = {
 		"type": "attack",
 		"attacker": attacker["name"],
@@ -373,13 +369,10 @@ func _attack(attacker_id: String, defender_id: String):
 	combat_state.spend_action_points(1)
 	
 	# ОБНОВЛЯЕМ ПОДСВЕТКУ ПОСЛЕ АТАКИ
+	_clear_highlight()
 	if combat_state.action_points > 0:
-		_clear_highlight()
 		_highlight_available_moves(attacker_id)
-		refresh_grid()
-	else:
-		_clear_highlight()
-		refresh_grid()
+	refresh_grid()
 	
 	if combat_state.action_points <= 0:
 		selected_unit_id = ""
@@ -392,6 +385,21 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 	if start_pos.x == -1:
 		return
 	var distance = abs(target_x - start_pos.x) + abs(target_y - start_pos.y)
+	
+	# В мирном режиме — свободное перемещение без проверки очков действий
+	if combat_state.mode == CombatState.GameMode.PEACEFUL:
+		if grid_state.is_walkable(target_x, target_y, unit_id):
+			var unit_data = grid_state.units[str(start_pos.x) + "_" + str(start_pos.y)]
+			grid_state.remove_unit(unit_id)
+			grid_state.set_unit(unit_id, unit_data["name"], unit_data["type"], target_x, target_y)
+			refresh_grid()
+			print("Юнит свободно перемещен на ", target_x, ",", target_y)
+			return
+		else:
+			print("Клетка ", target_x, ",", target_y, " недоступна")
+			return
+	
+	# Боевой режим — с очками действий
 	if distance <= combat_state.action_points:
 		if grid_state.is_walkable(target_x, target_y, unit_id):
 			var unit_data = grid_state.units[str(start_pos.x) + "_" + str(start_pos.y)]
@@ -399,22 +407,11 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 			grid_state.set_unit(unit_id, unit_data["name"], unit_data["type"], target_x, target_y)
 			combat_state.spend_action_points(distance)
 			
-			# ОБНОВЛЯЕМ ПОДСВЕТКУ
 			_clear_highlight()
 			if combat_state.action_points > 0:
 				_highlight_available_moves(unit_id)
-			
 			refresh_grid()
 			print("Юнит перемещен на ", target_x, ",", target_y)
-			
-			# Проверяем, не встал ли игрок на клетку с дверью
-			var location_manager = get_node("/root/LocationManagerAuto")
-			if location_manager and location_manager.current_location:
-				for exit_data in location_manager.current_location.exits:
-					if exit_data.x == target_x and exit_data.y == target_y:
-						print("Игрок встал на клетку с дверью")
-						game_controller.game_message.emit("Вы стоите перед дверью. Нажмите ещё раз, чтобы войти.")
-						break
 			
 			if combat_state.action_points <= 0:
 				selected_unit_id = ""
@@ -515,3 +512,43 @@ func _enter_door(exit_data: Dictionary):
 		"previous_location": location_manager.current_location.name if location_manager.current_location else "Неизвестно",
 		"exit_description": exit_data.description
 	})
+func _show_all_walkable_cells(unit_id: String):
+	_clear_highlight()
+	var pos = grid_state.get_unit_position(unit_id)
+	if pos.x == -1:
+		return
+	
+	# Подсвечиваем самого игрока жёлтым
+	var player_highlight = ColorRect.new()
+	player_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	player_highlight.size = Vector2(grid_state.cell_size, grid_state.cell_size)
+	player_highlight.position = Vector2(pos.x * grid_state.cell_size, pos.y * grid_state.cell_size)
+	player_highlight.color = Color(1, 1, 0, 0.7)
+	player_highlight.z_index = 10
+	add_child(player_highlight)
+	available_moves.append(player_highlight)
+	
+	# Подсвечиваем все доступные клетки на карте (без ограничений)
+	for x in range(grid_state.width):
+		for y in range(grid_state.height):
+			if x == pos.x and y == pos.y:
+				continue
+			if grid_state.is_walkable(x, y, unit_id):
+				var highlight = ColorRect.new()
+				highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				highlight.size = Vector2(grid_state.cell_size, grid_state.cell_size)
+				highlight.position = Vector2(x * grid_state.cell_size, y * grid_state.cell_size)
+				highlight.color = Color(0, 1, 0, 0.3)
+				highlight.z_index = 5
+				add_child(highlight)
+				available_moves.append(highlight)
+func _update_highlight():
+	_clear_highlight()
+	if selected_unit_id == "":
+		return
+	
+	if combat_state.mode == CombatState.GameMode.PEACEFUL:
+		_show_all_walkable_cells(selected_unit_id)
+	else:
+		if combat_state.action_points > 0:
+			_highlight_available_moves(selected_unit_id)
