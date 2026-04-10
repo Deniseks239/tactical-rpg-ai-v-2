@@ -230,13 +230,29 @@ func _on_ai_response(response: Dictionary):
 		
 		# Текстовая генерация локации (всегда, если нет текущей локации или мы входим в дверь)
 		# Текстовая генерация локации
+		# Текстовая генерация локации
 		if not text.begins_with("[") and not text.begins_with("{"):
 			var location_manager = get_node("/root/LocationManagerAuto")
-			# Если нет текущей локации или мы входим в дверь
 			if location_manager and (location_manager.current_location == null or pending_action == "entering_door"):
 				print("Получено текстовое описание локации, передаём в LocationManager")
-				pending_action = ""  # сбрасываем флаг
-				var new_location = location_manager.generate_location(text)
+		
+				# Подготавливаем параметры для обратной двери
+				var additional_params = {}
+				if pending_return_location_id != "":
+					additional_params = {
+						"return_location_id": pending_return_location_id,
+						"return_door_x": pending_return_door_x,
+						"return_door_y": pending_return_door_y,
+						"previous_location": pending_previous_location
+					}
+					# Сбрасываем после использования
+					pending_return_location_id = ""
+					pending_return_door_x = 0
+					pending_return_door_y = 0
+					pending_previous_location = ""
+		
+				pending_action = ""
+				var new_location = location_manager.generate_location(text, additional_params)
 				location_manager.set_current_location(new_location)
 				return
 		
@@ -617,6 +633,12 @@ func _apply_map_data(map_data: Dictionary):
 	_refresh_grid()
 func request_location_generation(location_context: Dictionary):
 	print("Запрос на генерацию новой локации с контекстом: ", location_context)
+	
+	# Сохраняем информацию для обратной двери
+	pending_return_location_id = location_context.get("return_location_id", "")
+	pending_return_door_x = location_context.get("return_door_x", 0)
+	pending_return_door_y = location_context.get("return_door_y", 0)
+	pending_previous_location = location_context.get("previous_location", "Неизвестно")
 	
 	var prompt = """
 Ты — мастер подземелий. Опиши новую локацию для продолжения приключения.
