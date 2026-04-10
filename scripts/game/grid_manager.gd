@@ -494,16 +494,23 @@ func _refresh_grid_keep_camera():
 func _enter_door(exit_data: Dictionary):
 	print("Переход через дверь: ", exit_data.description)
 	game_controller.pending_action = "entering_door"
-	game_controller.pending_return_location_id = game_controller.current_location.id if game_controller.current_location else ""
-	game_controller.pending_return_door_x = exit_data.get("x", 0)
-	game_controller.pending_return_door_y = exit_data.get("y", 0)
-	game_controller.pending_previous_location = game_controller.current_location.name if game_controller.current_location else "Неизвестно"
+	
 	var location_manager = get_node("/root/LocationManagerAuto")
 	if not location_manager:
 		print("LocationManager не найден!")
 		return
 	
 	var current_location = location_manager.current_location
+	if not current_location:
+		print("Текущая локация не найдена!")
+		return
+	
+	# Сохраняем информацию для обратной двери в game_controller
+	game_controller.pending_return_location_id = current_location.id
+	game_controller.pending_return_door_x = exit_data.get("x", 0)
+	game_controller.pending_return_door_y = exit_data.get("y", 0)
+	game_controller.pending_previous_location = current_location.name
+	
 	var target_id = exit_data.get("target_location_id", "")
 	
 	# Если есть целевая локация, загружаем её
@@ -516,16 +523,13 @@ func _enter_door(exit_data: Dictionary):
 	
 	# Генерируем новую локацию
 	print("Генерация новой локации...")
-	
-	# Сохраняем информацию о том, откуда пришли
 	var door_info = {
-		"parent_location": current_location.id if current_location else "",
-		"door_id": exit_data.get("target_door_id", ""),
-		"previous_location": current_location.name if current_location else "Неизвестно",
+		"parent_location": current_location.id,
+		"previous_location": current_location.name,
 		"exit_description": exit_data.description,
-		"return_door_x": exit_data.get("x", 0),  # позиция двери в текущей локации
-		"return_door_y": exit_data.get("y", 0),
-		"return_location_id": current_location.id if current_location else ""
+		"return_location_id": current_location.id,
+		"return_door_x": exit_data.get("x", 0),
+		"return_door_y": exit_data.get("y", 0)
 	}
 	
 	game_controller.request_location_generation(door_info)
