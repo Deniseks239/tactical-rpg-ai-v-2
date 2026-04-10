@@ -253,6 +253,7 @@ func _on_cell_pressed(x: int, y: int):
 				return
 			else:
 				print("Клик по самому себе, ничего не делаем")
+				_update_highlight()
 				return
 		
 		# Если на клетке враг — атакуем
