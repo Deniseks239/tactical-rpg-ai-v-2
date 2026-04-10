@@ -356,7 +356,7 @@ static func _create_exits(exit_configs: Array, tiles: Array, size: int) -> Array
 					y = pos[1]
 			exits.append({"x": x, "y": y, "description": config.get("description", "Дверь")})
 			if x >= 0 and x < size and y >= 0 and y < size:
-				tiles[x][y] = TileType.FLOOR
+				tiles[x][y] = TileType.FLOOR  # Клетка с дверью проходима
 		else:
 			print("Предупреждение: неверный формат выхода:", config)
 	return exits
