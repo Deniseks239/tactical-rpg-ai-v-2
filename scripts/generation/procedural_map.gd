@@ -88,6 +88,12 @@ static func generate(params: Dictionary) -> Dictionary:
 	if params.has("exits"):
 		exits = _create_exits(params["exits"], tiles, size)
 	
+	# Помечаем клетки с выходами (дверями) как FLOOR (они проходимы)
+	for exit in exits:
+		var x = exit.get("x", -1)
+		var y = exit.get("y", -1)
+		if x >= 0 and x < size and y >= 0 and y < size:
+			tiles[x][y] = TileType.FLOOR
 	return {
 		"size": size,
 		"biome": biome,
