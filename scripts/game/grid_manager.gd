@@ -175,6 +175,8 @@ func _create_grid():
 				GridState.TileType.STATUE:
 					rect.color = Color(0.7, 0.7, 0.6, 1.0)
 			add_child(rect)
+			
+			# Подсветка дверей из LocationManager (старый способ)
 			var is_exit = false
 			var location_manager = get_node("/root/LocationManagerAuto")
 			if location_manager and location_manager.current_location:
@@ -183,9 +185,8 @@ func _create_grid():
 						is_exit = true
 						break
 			if is_exit:
-				# Делаем клетку другого цвета или добавляем рамку
 				rect.color = Color(0.9, 0.8, 0.5, 1.0)  # золотистый цвет для дверей
-				
+			
 			var button = Button.new()
 			button.flat = true
 			button.size = rect.size
@@ -209,9 +210,52 @@ func _create_grid():
 					hp_label.position = rect.position + Vector2(20, 40)
 					hp_label.add_theme_font_size_override("font_size", 12)
 					add_child(hp_label)
+	
+	# ===== НОВЫЙ КОД: ОТРИСОВКА ДВЕРЕЙ ИЗ grid_state.doors =====
+	# ===== НОВЫЙ КОД: ОТРИСОВКА ДВЕРЕЙ ИЗ grid_state.doors =====
+	if "doors" in grid_state and grid_state.doors is Dictionary:
+		for door_key in grid_state.doors.keys():
+			var door = grid_state.doors[door_key]
+			var parts = door_key.split("_")
+			if parts.size() != 2:
+				continue
+			var x = int(parts[0])
+			var y = int(parts[1])
+		
+			# Создаём визуальный маркер двери
+			var door_rect = ColorRect.new()
+			door_rect.size = Vector2(grid_state.cell_size, grid_state.cell_size)
+			door_rect.position = Vector2(x * grid_state.cell_size, y * grid_state.cell_size)
+			door_rect.color = Color(0.8, 0.6, 0.2, 0.8)  # золотистый
+			door_rect.z_index = 2
+			add_child(door_rect)
+		
+			# Добавляем текст "ДВЕРЬ" для наглядности
+			var door_label = Label.new()
+			door_label.text = "🚪"
+			door_label.position = door_rect.position + Vector2(grid_state.cell_size / 4, grid_state.cell_size / 4)
+			door_label.z_index = 3
+			add_child(door_label)
+# ===========================================================
 
 func _on_cell_pressed(x: int, y: int):
 	print("=== КЛИК ПО КЛЕТКЕ ", x, ",", y, " ===")
+	
+	# ===== ПРОВЕРКА НА ДВЕРЬ (НОВЫЙ КОД) =====
+	var door_key = str(x) + "_" + str(y)
+	if "doors" in grid_state and grid_state.doors.has(door_key):
+		var door = grid_state.doors[door_key]
+		print("Клик по двери на клетке ", x, ",", y)
+		_enter_door({
+			"x": x,
+			"y": y,
+			"description": door.description,
+			"target_location_id": door.target_location_id,
+			"target_door_id": door.target_door_id
+		})
+		return
+	# =========================================
+	
 	var pos_key = str(x) + "_" + str(y)
 	
 	if game_controller.is_waiting_for_ai:
@@ -236,7 +280,7 @@ func _on_cell_pressed(x: int, y: int):
 	if selected_unit_id != "":
 		# Если кликнули на самого себя
 		if unit_on_cell and unit_on_cell["type"] == "player" and unit_on_cell["id"] == selected_unit_id:
-			# Проверяем, не стоит ли игрок на клетке с дверью
+			# Проверяем, не стоит ли игрок на клетке с дверью (старая логика)
 			var location_manager = get_node("/root/LocationManagerAuto")
 			var is_on_door = false
 			var door_exit = null
@@ -274,7 +318,7 @@ func _on_cell_pressed(x: int, y: int):
 		print("Выбран игрок: ", selected_unit_id)
 		return
 	
-	# Если нет юнита, проверяем дверь (только для взаимодействия, не для перемещения)
+	# Если нет юнита, проверяем дверь (старая логика)
 	var location_manager = get_node("/root/LocationManagerAuto")
 	if location_manager and location_manager.current_location:
 		for exit_data in location_manager.current_location.exits:
@@ -605,7 +649,7 @@ func add_door(door: DoorData) -> void:
 	var door_key = str(door.position.x) + "_" + str(door.position.y)
 	
 	# Инициализируем словарь doors, если его нет
-	if not grid_state.has("doors"):
+	if not "doors" in grid_state:
 		grid_state.doors = {}
 	
 	grid_state.doors[door_key] = door
