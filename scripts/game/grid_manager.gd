@@ -506,10 +506,13 @@ func _enter_door(exit_data: Dictionary):
 		print("Текущая локация не найдена!")
 		return
 	
+	# Сохраняем текущую позицию игрока для обратной двери
+	var player_pos = grid_state.get_unit_position("player_1")
+	
 	# Сохраняем информацию для обратной двери в game_controller
 	game_controller.pending_return_location_id = current_location.id
-	game_controller.pending_return_door_x = exit_data.get("x", 0)
-	game_controller.pending_return_door_y = exit_data.get("y", 0)
+	game_controller.pending_return_door_x = player_pos.x  # <-- ИЗМЕНЕНО: позиция игрока вместо координат двери
+	game_controller.pending_return_door_y = player_pos.y
 	game_controller.pending_previous_location = current_location.name
 	
 	var target_id = exit_data.get("target_location_id", "")
@@ -529,8 +532,8 @@ func _enter_door(exit_data: Dictionary):
 		"previous_location": current_location.name,
 		"exit_description": exit_data.description,
 		"return_location_id": current_location.id,
-		"return_door_x": exit_data.get("x", 0),
-		"return_door_y": exit_data.get("y", 0)
+		"return_door_x": player_pos.x,  # <-- ИЗМЕНЕНО
+		"return_door_y": player_pos.y
 	}
 	
 	game_controller.request_location_generation(door_info)
@@ -594,3 +597,7 @@ func _highlight_player_only(unit_id: String):
 	player_highlight.z_index = 10
 	add_child(player_highlight)
 	available_moves.append(player_highlight)
+func add_door(door: DoorData) -> void:
+	var door_key = str(door.position.x) + "_" + str(door.position.y)
+	grid_state.doors[door_key] = door
+	refresh_grid()
