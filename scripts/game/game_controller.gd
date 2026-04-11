@@ -575,6 +575,10 @@ func _apply_map_data(map_data: Dictionary):
 		grid_state.width = size
 		grid_state.height = size
 		grid_state.initialize()
+	# ===== ОЧИЩАЕМ СТАРЫЕ ДВЕРИ =====
+	if "doors" in grid_state:
+		grid_state.doors.clear()
+	# =================================
 	
 	# Применяем тайлы
 	var tiles = map_data.get("tiles", [])
