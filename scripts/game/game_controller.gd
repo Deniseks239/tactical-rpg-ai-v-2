@@ -591,7 +591,7 @@ func _apply_map_data(map_data: Dictionary):
 			grid_state.remove_unit(unit_id)
 			combat_state.remove_unit(unit_id)
 	
-	# Размещаем врагов (БЕЗ АВТОМАТИЧЕСКОГО БОЯ)
+	# Размещаем врагов
 	var enemies = map_data.get("enemies", [])
 	for enemy in enemies:
 		var enemy_id = "enemy_" + str(randi())
@@ -608,16 +608,26 @@ func _apply_map_data(map_data: Dictionary):
 				"attack_bonus": enemy.get("attack_bonus", 3),
 				"damage_dice": enemy.get("damage_dice", "1d6+2")
 			})
-			# НЕ добавляем врагов в initiative_order здесь!
+	
+	# ===== ДОБАВИТЬ ЭТОТ БЛОК ДЛЯ ДВЕРЕЙ =====
+	var exits = map_data.get("exits", [])
+	for door_data in exits:
+		var door = DoorData.new()
+		door.position = Vector2i(door_data.get("x", 0), door_data.get("y", 0))
+		door.description = door_data.get("description", "Дверь")
+		door.target_location_id = door_data.get("target_location_id", "")
+		door.target_door_id = door_data.get("target_door_id", "")
+		var grid_manager = _get_grid_manager()
+		if grid_manager:
+			grid_manager.add_door(door)
+	# ==========================================
 	
 	# Размещаем игрока
 	var player_start = map_data.get("player_start", [size/2, size/2])
 	grid_state.remove_unit("player_1")
 	grid_state.set_unit("player_1", current_player_name, "player", player_start[0], player_start[1])
 	print("Игрок создан на позиции ", player_start[0], ",", player_start[1], " с именем ", current_player_name)
-	print("Все юниты после создания: ", grid_state.units)
 	
-	# Обновляем отображение
 	_refresh_grid()
 	
 	print("Карта применена: ", map_data.get("location_name", "Неизвестная локация"))
@@ -626,11 +636,6 @@ func _apply_map_data(map_data: Dictionary):
 	combat_state.initiative_order = []
 	combat_state.current_turn_index = 0
 	combat_state.action_points = 3
-	
-	print("Режим: мирный. Враги есть, но не атакуют до первой атаки игрока.")
-	
-	# Обновляем отображение
-	_refresh_grid()
 func request_location_generation(location_context: Dictionary):
 	print("Запрос на генерацию новой локации с контекстом: ", location_context)
 	
