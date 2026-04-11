@@ -29,7 +29,7 @@ enum TileType { FLOOR,
 @export var width: int = 8
 @export var height: int = 8
 @export var cell_size: int = 64
-
+var doors: Dictionary = {}  # ключ "x_y" -> DoorData
 var tiles: Array = []
 var units: Dictionary = {}  # "x_y" -> {"id": String, "name": String, "type": String}
 var objects: Dictionary = {}
