@@ -223,20 +223,23 @@ func _create_grid():
 			var y = int(parts[1])
 		
 			# Создаём визуальный маркер двери
+			# Создаём визуальный маркер двери
 			var door_rect = ColorRect.new()
+			door_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE  # <-- ВАЖНО: пропускает клики к кнопке
 			door_rect.size = Vector2(grid_state.cell_size, grid_state.cell_size)
 			door_rect.position = Vector2(x * grid_state.cell_size, y * grid_state.cell_size)
 			door_rect.color = Color(0.8, 0.6, 0.2, 0.8)  # золотистый
 			door_rect.z_index = 2
 			add_child(door_rect)
-		
+
 			# Добавляем текст "ДВЕРЬ" для наглядности
 			var door_label = Label.new()
+			door_label.mouse_filter = Control.MOUSE_FILTER_IGNORE  # <-- ВАЖНО: пропускает клики к кнопке
 			door_label.text = "🚪"
 			door_label.position = door_rect.position + Vector2(grid_state.cell_size / 4, grid_state.cell_size / 4)
 			door_label.z_index = 3
 			add_child(door_label)
-# ===========================================================
+			# ===========================================================
 
 func _on_cell_pressed(x: int, y: int):
 	print("=== КЛИК ПО КЛЕТКЕ ", x, ",", y, " ===")
@@ -435,43 +438,61 @@ func _try_move_unit(unit_id: String, target_x: int, target_y: int):
 		return
 	var distance = abs(target_x - start_pos.x) + abs(target_y - start_pos.y)
 	
+	# Проверка границ
+	if target_x < 0 or target_x >= grid_state.width or target_y < 0 or target_y >= grid_state.height:
+		print("Клетка за границами карты")
+		return
+	
+	# Проверка, не стена ли это
+	var tile_type = grid_state.tiles[target_x][target_y]["type"]
+	if tile_type == GridState.TileType.WALL:
+		print("Нельзя ходить сквозь стены")
+		return
+	
+	# Проверка на дверь — двери проходимы
+	var door_key = str(target_x) + "_" + str(target_y)
+	var is_door = ("doors" in grid_state) and grid_state.doors.has(door_key)
+	
+	# Проверка занятости клетки другим юнитом
+	var unit_key = str(target_x) + "_" + str(target_y)
+	var is_occupied = grid_state.units.has(unit_key)
+	
+	# Клетка доступна, если она не занята (или это дверь, на которой никого нет)
+	var can_walk = not is_occupied or is_door
+	
+	if not can_walk:
+		print("Клетка занята")
+		return
+	
 	# В мирном режиме — свободное перемещение без проверки очков действий
 	if combat_state.mode == CombatState.GameMode.PEACEFUL:
-		if grid_state.is_walkable(target_x, target_y, unit_id):
-			var unit_data = grid_state.units[str(start_pos.x) + "_" + str(start_pos.y)]
-			grid_state.remove_unit(unit_id)
-			grid_state.set_unit(unit_id, unit_data["name"], unit_data["type"], target_x, target_y)
-			refresh_grid()
-			_update_highlight()
-			print("Юнит свободно перемещен на ", target_x, ",", target_y)
-			return
-		else:
-			print("Клетка ", target_x, ",", target_y, " недоступна")
-			return
+		var unit_data = grid_state.units[str(start_pos.x) + "_" + str(start_pos.y)]
+		grid_state.remove_unit(unit_id)
+		grid_state.set_unit(unit_id, unit_data["name"], unit_data["type"], target_x, target_y)
+		refresh_grid()
+		_update_highlight()
+		print("Юнит свободно перемещен на ", target_x, ",", target_y)
+		return
 	
 	# Боевой режим — с очками действий
 	print("DEBUG БОЙ: distance = ", distance, ", action_points = ", combat_state.action_points)
 	if distance <= combat_state.action_points:
-		if grid_state.is_walkable(target_x, target_y, unit_id):
-			var unit_data = grid_state.units[str(start_pos.x) + "_" + str(start_pos.y)]
-			grid_state.remove_unit(unit_id)
-			grid_state.set_unit(unit_id, unit_data["name"], unit_data["type"], target_x, target_y)
-			combat_state.spend_action_points(distance)
-			
+		var unit_data = grid_state.units[str(start_pos.x) + "_" + str(start_pos.y)]
+		grid_state.remove_unit(unit_id)
+		grid_state.set_unit(unit_id, unit_data["name"], unit_data["type"], target_x, target_y)
+		combat_state.spend_action_points(distance)
+		
+		_update_highlight()
+		refresh_grid()
+		print("Юнит перемещен на ", target_x, ",", target_y)
+		
+		if combat_state.action_points <= 0:
+			selected_unit_id = ""
 			_update_highlight()
 			refresh_grid()
-			print("Юнит перемещен на ", target_x, ",", target_y)
-			
-			if combat_state.action_points <= 0:
-				selected_unit_id = ""
-				_update_highlight()
-				refresh_grid()
-				game_controller.end_player_turn()
-		else:
-			print("Клетка ", target_x, ",", target_y, " недоступна")
+			game_controller.end_player_turn()
 	else:
 		print("Слишком далеко: расстояние ", distance, " > ", combat_state.action_points)
-
 func _highlight_available_moves(unit_id: String):
 	_clear_highlight()
 	var pos = grid_state.get_unit_position(unit_id)
@@ -545,6 +566,16 @@ func _enter_door(exit_data: Dictionary):
 		print("LocationManager не найден!")
 		return
 	
+	# ===== ПРОВЕРКА НА СУЩЕСТВУЮЩУЮ ЛОКАЦИЮ (НОВЫЙ КОД) =====
+	var target_id = exit_data.get("target_location_id", "")
+	if target_id != "" and location_manager.locations.has(target_id):
+		print("Локация уже существует, загружаем: ", target_id)
+		var target_location = location_manager.locations[target_id]
+		location_manager.set_current_location(target_location)
+		game_controller.pending_action = ""
+		return
+	# ======================================================
+	
 	var current_location = location_manager.current_location
 	if not current_location:
 		print("Текущая локация не найдена!")
@@ -555,19 +586,9 @@ func _enter_door(exit_data: Dictionary):
 	
 	# Сохраняем информацию для обратной двери в game_controller
 	game_controller.pending_return_location_id = current_location.id
-	game_controller.pending_return_door_x = player_pos.x  # <-- ИЗМЕНЕНО: позиция игрока вместо координат двери
+	game_controller.pending_return_door_x = player_pos.x
 	game_controller.pending_return_door_y = player_pos.y
 	game_controller.pending_previous_location = current_location.name
-	
-	var target_id = exit_data.get("target_location_id", "")
-	
-	# Если есть целевая локация, загружаем её
-	if target_id != "":
-		var target_location = location_manager.load_location(target_id)
-		if target_location:
-			location_manager.set_current_location(target_location)
-			game_controller.pending_action = ""
-			return
 	
 	# Генерируем новую локацию
 	print("Генерация новой локации...")
@@ -576,7 +597,7 @@ func _enter_door(exit_data: Dictionary):
 		"previous_location": current_location.name,
 		"exit_description": exit_data.description,
 		"return_location_id": current_location.id,
-		"return_door_x": player_pos.x,  # <-- ИЗМЕНЕНО
+		"return_door_x": player_pos.x,
 		"return_door_y": player_pos.y
 	}
 	
@@ -651,6 +672,11 @@ func add_door(door: DoorData) -> void:
 	# Инициализируем словарь doors, если его нет
 	if not "doors" in grid_state:
 		grid_state.doors = {}
+	
+	# Проверяем, нет ли уже двери на этой позиции
+	if grid_state.doors.has(door_key):
+		print("GridManager: Дверь на позиции ", door.position, " уже существует, пропускаем")
+		return
 	
 	grid_state.doors[door_key] = door
 	print("GridManager: Дверь добавлена на позицию ", door.position)
