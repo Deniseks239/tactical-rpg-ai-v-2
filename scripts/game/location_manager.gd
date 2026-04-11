@@ -42,11 +42,35 @@ func generate_location(description: String, additional_params: Dictionary = {}) 
 	location.enemies = map_data.get("enemies", [])
 	location.npcs = map_data.get("npcs", [])
 	location.objects = map_data.get("objects", [])
-	location.exits = map_data.get("exits", [])  # здесь уже будет обратный выход
+	location.exits = map_data.get("exits", [])
 	location.player_start_x = map_data.get("player_start", [8, 8])[0]
 	location.player_start_y = map_data.get("player_start", [8, 8])[1]
 	location.width = map_data.get("size", 16)
 	location.height = map_data.get("size", 16)
+	
+	# ===== ПРИНУДИТЕЛЬНО УСТАНАВЛИВАЕМ КООРДИНАТЫ ОБРАТНОЙ ДВЕРИ =====
+	if additional_params.has("return_location_id") and additional_params["return_location_id"] != "":
+		var return_x = additional_params.get("return_door_x", 0)
+		var return_y = additional_params.get("return_door_y", 0)
+		var found = false
+		for exit_data in location.exits:
+			if exit_data.get("target_location_id") == additional_params["return_location_id"]:
+				exit_data["x"] = return_x
+				exit_data["y"] = return_y
+				found = true
+				print("LocationManager: Координаты обратной двери установлены на ", return_x, ",", return_y)
+				break
+		# Если обратная дверь не найдена в exits (на всякий случай), добавляем её
+		if not found:
+			var return_door = {
+				"x": return_x,
+				"y": return_y,
+				"description": "Обратный проход в " + additional_params.get("previous_location", "предыдущую локацию"),
+				"target_location_id": additional_params["return_location_id"]
+			}
+			location.exits.append(return_door)
+			print("LocationManager: Обратная дверь добавлена принудительно на ", return_x, ",", return_y)
+	# =================================================================
 	
 	# 5. Сохраняем локацию
 	locations[location.id] = location
@@ -75,6 +99,10 @@ func set_current_location(location: LocationData):
 func _apply_location_to_game(location: LocationData):
 	var game_controller = get_node("/root/GameControllerAuto")
 	if game_controller:
+		for unit_id in game_controller.combat_state.units.keys():
+			if unit_id != "player_1":
+				game_controller.grid_state.remove_unit(unit_id)
+				game_controller.combat_state.remove_unit(unit_id)
 		game_controller._apply_map_data({
 			"size": location.width,
 			"tiles": location.tiles,
