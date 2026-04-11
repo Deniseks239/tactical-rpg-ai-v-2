@@ -598,6 +598,15 @@ func _highlight_player_only(unit_id: String):
 	add_child(player_highlight)
 	available_moves.append(player_highlight)
 func add_door(door: DoorData) -> void:
+	if not grid_state:
+		print("GridManager: grid_state не инициализирован, дверь не добавлена")
+		return
+	
 	var door_key = str(door.position.x) + "_" + str(door.position.y)
+	
+	# Инициализируем словарь doors, если его нет
+	if not grid_state.has("doors"):
+		grid_state.doors = {}
+	
 	grid_state.doors[door_key] = door
-	refresh_grid()
+	print("GridManager: Дверь добавлена на позицию ", door.position)
