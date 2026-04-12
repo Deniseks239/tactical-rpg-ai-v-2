@@ -242,22 +242,31 @@ func _create_grid():
 			# ===========================================================
 
 func _on_cell_pressed(x: int, y: int):
-	print("=== КЛИК ПО КЛЕТКЕ ", x, ",", y, " ===")
-	
-	# ===== ПРОВЕРКА НА ДВЕРЬ (НОВЫЙ КОД) =====
+	# ===== ПРОВЕРКА НА ДВЕРЬ (ИСПРАВЛЕНО) =====
 	var door_key = str(x) + "_" + str(y)
 	if "doors" in grid_state and grid_state.doors.has(door_key):
 		var door = grid_state.doors[door_key]
 		print("Клик по двери на клетке ", x, ",", y)
-		_enter_door({
-			"x": x,
-			"y": y,
-			"description": door.description,
-			"target_location_id": door.target_location_id,
-			"target_door_id": door.target_door_id
-		})
+	
+		# Проверяем, стоит ли игрок на этой клетке
+		var player_pos = grid_state.get_unit_position("player_1")
+		if player_pos.x == x and player_pos.y == y:
+			# Игрок стоит на двери — входим
+			_enter_door({
+				"x": x,
+				"y": y,
+				"description": door.description,
+				"target_location_id": door.target_location_id,
+				"target_door_id": door.target_door_id
+			})
+		else:
+			# Игрок не на двери — пытаемся переместиться
+			if selected_unit_id != "":
+				_try_move_unit(selected_unit_id, x, y)
+			else:
+				game_controller.game_message.emit("Выберите персонажа для перемещения")
 		return
-	# =========================================
+# =============================================
 	
 	var pos_key = str(x) + "_" + str(y)
 	
