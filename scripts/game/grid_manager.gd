@@ -592,7 +592,9 @@ func _enter_door(exit_data: Dictionary):
 	
 	# Сохраняем текущую позицию игрока для обратной двери
 	var player_pos = grid_state.get_unit_position("player_1")
-	
+	var door_x = exit_data.get("x", 0)
+	var door_y = exit_data.get("y", 0)
+	var return_pos = _find_free_adjacent_cell(door_x, door_y)
 	# Сохраняем информацию для обратной двери в game_controller
 	game_controller.pending_return_location_id = current_location.id
 	game_controller.pending_return_door_x = player_pos.x
@@ -689,3 +691,34 @@ func add_door(door: DoorData) -> void:
 	
 	grid_state.doors[door_key] = door
 	print("GridManager: Дверь добавлена на позицию ", door.position)
+# Ищет свободную соседнюю клетку (по горизонтали/вертикали) для размещения обратной двери
+func _find_free_adjacent_cell(x: int, y: int) -> Vector2i:
+	var directions = [
+		Vector2i(1, 0),   # вправо
+		Vector2i(-1, 0),  # влево
+		Vector2i(0, 1),   # вниз
+		Vector2i(0, -1)   # вверх
+	]
+	
+	for dir in directions:
+		var nx = x + dir.x
+		var ny = y + dir.y
+		# Проверяем границы
+		if nx < 0 or nx >= grid_state.width or ny < 0 or ny >= grid_state.height:
+			continue
+		# Проверяем, что клетка проходима и не занята
+		var tile_type = grid_state.tiles[nx][ny]["type"]
+		if tile_type == GridState.TileType.WALL:
+			continue
+		var unit_key = str(nx) + "_" + str(ny)
+		if grid_state.units.has(unit_key):
+			continue
+		var door_key = str(nx) + "_" + str(ny)
+		if "doors" in grid_state and grid_state.doors.has(door_key):
+			continue
+		# Нашли свободную клетку
+		return Vector2i(nx, ny)
+	
+	# Если все соседние заняты – возвращаем исходную позицию (на худой конец)
+	printerr("Не найдено свободной клетки рядом с дверью! Ставим дверь поверх.")
+	return Vector2i(x, y)
