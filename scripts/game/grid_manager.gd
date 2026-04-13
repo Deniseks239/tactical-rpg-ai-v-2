@@ -211,8 +211,7 @@ func _create_grid():
 					hp_label.add_theme_font_size_override("font_size", 12)
 					add_child(hp_label)
 	
-	# ===== НОВЫЙ КОД: ОТРИСОВКА ДВЕРЕЙ ИЗ grid_state.doors =====
-	# ===== НОВЫЙ КОД: ОТРИСОВКА ДВЕРЕЙ ИЗ grid_state.doors =====
+	# ===== ОТРИСОВКА ДВЕРЕЙ С РАЗНЫМИ ЦВЕТАМИ =====
 	if "doors" in grid_state and grid_state.doors is Dictionary:
 		for door_key in grid_state.doors.keys():
 			var door = grid_state.doors[door_key]
@@ -222,24 +221,34 @@ func _create_grid():
 			var x = int(parts[0])
 			var y = int(parts[1])
 		
-			# Создаём визуальный маркер двери
-			# Создаём визуальный маркер двери
+			# Определяем цвет двери
+			var door_color: Color
+			if door.target_location_id != "":
+				# Дверь ведёт в уже существующую локацию (обратная дверь)
+				door_color = Color(0.2, 0.8, 0.2, 0.8)  # зелёный
+			else:
+				# Новая, ещё не сгенерированная локация
+				door_color = Color(0.9, 0.4, 0.2, 0.8)  # оранжевый
+		
 			var door_rect = ColorRect.new()
-			door_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE  # <-- ВАЖНО: пропускает клики к кнопке
+			door_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			door_rect.size = Vector2(grid_state.cell_size, grid_state.cell_size)
 			door_rect.position = Vector2(x * grid_state.cell_size, y * grid_state.cell_size)
-			door_rect.color = Color(0.8, 0.6, 0.2, 0.8)  # золотистый
+			door_rect.color = door_color
 			door_rect.z_index = 2
 			add_child(door_rect)
-
-			# Добавляем текст "ДВЕРЬ" для наглядности
+		
+			# Текст с иконкой и, возможно, названием локации
 			var door_label = Label.new()
-			door_label.mouse_filter = Control.MOUSE_FILTER_IGNORE  # <-- ВАЖНО: пропускает клики к кнопке
+			door_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			door_label.text = "🚪"
-			door_label.position = door_rect.position + Vector2(grid_state.cell_size / 4, grid_state.cell_size / 4)
+			if door.target_location_id != "":
+				# Если знаем название локации, добавляем его (можно сохранить в door.description)
+				door_label.text += "\n" + door.description.left(10)  # первые 10 символов
+			door_label.position = door_rect.position + Vector2(5, 5)
 			door_label.z_index = 3
 			add_child(door_label)
-			# ===========================================================
+# 	============================================
 
 func _on_cell_pressed(x: int, y: int):
 	# ===== ПРОВЕРКА НА ДВЕРЬ (ИСПРАВЛЕНО) =====
