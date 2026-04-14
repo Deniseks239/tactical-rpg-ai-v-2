@@ -48,30 +48,6 @@ func generate_location(description: String, additional_params: Dictionary = {}) 
 	location.width = map_data.get("size", 16)
 	location.height = map_data.get("size", 16)
 	
-	# ===== ПРИНУДИТЕЛЬНО УСТАНАВЛИВАЕМ КООРДИНАТЫ ОБРАТНОЙ ДВЕРИ =====
-	if additional_params.has("return_location_id") and additional_params["return_location_id"] != "":
-		var return_x = additional_params.get("return_door_x", 0)
-		var return_y = additional_params.get("return_door_y", 0)
-		var found = false
-		for exit_data in location.exits:
-			if exit_data.get("target_location_id") == additional_params["return_location_id"]:
-				exit_data["x"] = return_x
-				exit_data["y"] = return_y
-				found = true
-				print("LocationManager: Координаты обратной двери установлены на ", return_x, ",", return_y)
-				break
-		# Если обратная дверь не найдена в exits (на всякий случай), добавляем её
-		if not found:
-			var return_door = {
-				"x": return_x,
-				"y": return_y,
-				"description": "Обратный проход в " + additional_params.get("previous_location", "предыдущую локацию"),
-				"target_location_id": additional_params["return_location_id"]
-			}
-			location.exits.append(return_door)
-			print("LocationManager: Обратная дверь добавлена принудительно на ", return_x, ",", return_y)
-	# =================================================================
-	
 	# 5. Сохраняем локацию
 	locations[location.id] = location
 	location.save()
@@ -96,7 +72,7 @@ func set_current_location(location: LocationData):
 	current_location = location
 	_apply_location_to_game(location)
 
-func _apply_location_to_game(location: LocationData):
+func _apply_location_to_game(location: LocationData, entry_door_pos: Vector2i = Vector2i(-1, -1)):
 	var game_controller = get_node("/root/GameControllerAuto")
 	if game_controller:
 		for unit_id in game_controller.combat_state.units.keys():
