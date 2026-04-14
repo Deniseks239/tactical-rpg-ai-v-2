@@ -567,7 +567,7 @@ func request_map_parameters(location_name: String, biome: String, player_party: 
 	
 	ai_client.send_request([], {}, prompt)
 	
-func _apply_map_data(map_data: Dictionary):
+func _apply_map_data(map_data: Dictionary, entry_door_pos: Vector2i = Vector2i(-1, -1)):
 	var size = map_data.get("size", 16)
 	
 	# Обновляем размер сетки
@@ -624,12 +624,19 @@ func _apply_map_data(map_data: Dictionary):
 		var grid_manager = _get_grid_manager()
 		if grid_manager:
 			grid_manager.add_door(door)
-	# ==========================================
 	
-	# Размещаем игрока
 	var player_start = map_data.get("player_start", [size/2, size/2])
+	var spawn_pos = Vector2i(player_start[0], player_start[1])
+
+	# Если передана позиция входной двери, ищем свободную клетку рядом с ней
+	if entry_door_pos.x >= 0 and entry_door_pos.y >= 0:
+		var free_pos = _find_free_cell_near(entry_door_pos, map_data)
+		if free_pos != Vector2i(-1, -1):
+			spawn_pos = free_pos
+			print("Игрок появится рядом с дверью на ", spawn_pos)
+
 	grid_state.remove_unit("player_1")
-	grid_state.set_unit("player_1", current_player_name, "player", player_start[0], player_start[1])
+	grid_state.set_unit("player_1", current_player_name, "player", spawn_pos.x, spawn_pos.y)
 	print("Игрок создан на позиции ", player_start[0], ",", player_start[1], " с именем ", current_player_name)
 	
 	_refresh_grid()
@@ -861,3 +868,40 @@ func request_victory_description():
 	
 	var prompt = "Опиши эпичную победу над последним врагом одной короткой фразой."
 	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "description")
+# Ищет свободную клетку рядом с указанной позицией
+func _find_free_cell_near(pos: Vector2i, map_data: Dictionary) -> Vector2i:
+	var directions = [
+		Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)
+	]
+	var size = map_data.get("size", 16)
+	var tiles = map_data.get("tiles", [])
+	var enemies = map_data.get("enemies", [])
+	var exits = map_data.get("exits", [])
+	
+	for dir in directions:
+		var nx = pos.x + dir.x
+		var ny = pos.y + dir.y
+		if nx < 0 or nx >= size or ny < 0 or ny >= size:
+			continue
+		# Проверка на стену
+		if tiles.size() > nx and tiles[nx].size() > ny:
+			var tile_type = tiles[nx][ny]
+			if tile_type == "wall":
+				continue
+		# Проверка на врага
+		var occupied = false
+		for enemy in enemies:
+			if enemy.get("x") == nx and enemy.get("y") == ny:
+				occupied = true
+				break
+		if occupied:
+			continue
+		# Проверка на другую дверь (не ту, через которую вошли)
+		for exit_data in exits:
+			if exit_data.get("x") == nx and exit_data.get("y") == ny:
+				occupied = true
+				break
+		if occupied:
+			continue
+		return Vector2i(nx, ny)
+	return Vector2i(-1, -1)
