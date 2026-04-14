@@ -586,12 +586,13 @@ func _enter_door(exit_data: Dictionary):
 	
 	# ===== ПРОВЕРКА НА СУЩЕСТВУЮЩУЮ ЛОКАЦИЮ (НОВЫЙ КОД) =====
 	var target_id = exit_data.get("target_location_id", "")
-	if target_id != "" and location_manager.locations.has(target_id):
-		print("Локация уже существует, загружаем: ", target_id)
-		var target_location = location_manager.locations[target_id]
-		location_manager.set_current_location(target_location)
-		game_controller.pending_action = ""
-		return
+	if target_id != "":
+		var existing_location = location_manager.load_location(target_id)
+		if existing_location:
+			print("Локация уже существует, загружаем: ", target_id)
+			location_manager.set_current_location(existing_location, Vector2i(door_x, door_y))
+			game_controller.pending_action = ""
+			return
 	# ======================================================
 	
 	var current_location = location_manager.current_location
