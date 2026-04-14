@@ -18,9 +18,18 @@ static func generate(params: Dictionary) -> Dictionary:
 	var location_type = params.get("location_type", "default")
 	var generator = params.get("generator", "default")
 
-	if generator == "city" or location_type == "city":
+	if generator == "city":
 		print("ProceduralMap: Генерация города")
 		return CityGenerator.generate_city(params)
+	elif generator == "tavern":
+		print("ProceduralMap: Генерация таверны")
+		return generate_tavern(params)
+	elif generator == "camp":
+		print("ProceduralMap: Генерация лагеря (пока используем default)")
+		# TODO: добавить generate_camp
+	elif generator == "house":
+		print("ProceduralMap: Генерация дома (пока используем default)")
+		# TODO: добавить generate_house
 
 	# Инициализируем генератор случайных чисел
 	seed(seed)
@@ -447,3 +456,69 @@ static func _get_npc_name(type: String) -> String:
 		"merchant": return "Торговец"
 		"innkeeper": return "Трактирщик"
 		_: return "Житель"
+# Генератор для таверны
+static func generate_tavern(params: Dictionary) -> Dictionary:
+	var size = params.get("size", 12)
+	seed(params.get("seed", randi()))
+	
+	var tiles = []
+	var heights = []
+	for x in range(size):
+		tiles.append([])
+		heights.append([])
+		for y in range(size):
+			tiles[x].append(TileType.FLOOR)
+			heights[x].append(0)
+	
+	# Стены по периметру
+	_apply_perimeter_walls(tiles, size, 1)
+	
+	# Входная дверь (на южной стене, по центру)
+	var door_x = size / 2
+	var door_y = size - 1
+	tiles[door_x][door_y] = TileType.FLOOR
+	
+	# Барная стойка (вдоль северной стены)
+	for x in range(2, size - 2):
+		tiles[x][2] = TileType.TABLE
+	
+	# Столы для посетителей (несколько 2x2)
+	var table_positions = [
+		[3, 5], [7, 5], [3, 8], [7, 8]
+	]
+	for pos in table_positions:
+		for dx in range(2):
+			for dy in range(2):
+				var nx = pos[0] + dx
+				var ny = pos[1] + dy
+				if nx < size - 1 and ny < size - 1:
+					tiles[nx][ny] = TileType.TABLE
+	
+	# Выходы (только входная дверь, если не указано иное)
+	var exits = []
+	if params.has("exits"):
+		exits = _create_exits(params["exits"], tiles, size)
+	else:
+		exits = [{"x": door_x, "y": door_y, "description": "Входная дверь"}]
+	
+	# Враги и NPC
+	var enemies = []
+	if params.has("enemies"):
+		enemies = _place_enemies(params["enemies"], tiles, size)
+	
+	var npcs = []
+	if params.has("npcs"):
+		npcs = _place_npcs(params["npcs"], tiles, size)
+	
+	return {
+		"size": size,
+		"biome": "tavern",
+		"tiles": _tiles_to_array(tiles),
+		"heights": heights,
+		"enemies": enemies,
+		"npcs": npcs,
+		"objects": [],
+		"exits": exits,
+		"player_start": params.get("player_start", [size/2, size - 2]),
+		"location_name": params.get("location_name", "Таверна")
+	}
