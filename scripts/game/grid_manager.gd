@@ -600,14 +600,14 @@ func _enter_door(exit_data: Dictionary):
 		return
 	
 	# Сохраняем текущую позицию игрока для обратной двери
-	var player_pos = grid_state.get_unit_position("player_1")
 	var door_x = exit_data.get("x", 0)
 	var door_y = exit_data.get("y", 0)
 	var return_pos = _find_free_adjacent_cell(door_x, door_y)
 	# Сохраняем информацию для обратной двери в game_controller
 	game_controller.pending_return_location_id = current_location.id
-	game_controller.pending_return_door_x = player_pos.x
-	game_controller.pending_return_door_y = player_pos.y
+	game_controller.pending_return_door_x = return_pos.x
+	game_controller.pending_return_door_y = return_pos.y
+
 	game_controller.pending_previous_location = current_location.name
 	
 	# Генерируем новую локацию
@@ -617,8 +617,8 @@ func _enter_door(exit_data: Dictionary):
 		"previous_location": current_location.name,
 		"exit_description": exit_data.description,
 		"return_location_id": current_location.id,
-		"return_door_x": player_pos.x,
-		"return_door_y": player_pos.y
+		"return_door_x": return_pos.x,
+		"return_door_y": return_pos.y
 	}
 	
 	game_controller.request_location_generation(door_info)
