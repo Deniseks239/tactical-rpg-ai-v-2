@@ -584,7 +584,12 @@ func _enter_door(exit_data: Dictionary):
 		print("LocationManager не найден!")
 		return
 	
-	# ===== ПРОВЕРКА НА СУЩЕСТВУЮЩУЮ ЛОКАЦИЮ (НОВЫЙ КОД) =====
+	# ===== ПЕРЕМЕЩАЕМ ОБЪЯВЛЕНИЕ СЮДА, В НАЧАЛО =====
+	var door_x = exit_data.get("x", 0)
+	var door_y = exit_data.get("y", 0)
+	# =============================================
+	
+	# ===== ПРОВЕРКА НА СУЩЕСТВУЮЩУЮ ЛОКАЦИЮ =====
 	var target_id = exit_data.get("target_location_id", "")
 	if target_id != "":
 		var existing_location = location_manager.load_location(target_id)
@@ -593,22 +598,20 @@ func _enter_door(exit_data: Dictionary):
 			location_manager.set_current_location(existing_location, Vector2i(door_x, door_y))
 			game_controller.pending_action = ""
 			return
-	# ======================================================
+	# =============================================
 	
 	var current_location = location_manager.current_location
 	if not current_location:
 		print("Текущая локация не найдена!")
 		return
 	
-	# Сохраняем текущую позицию игрока для обратной двери
-	var door_x = exit_data.get("x", 0)
-	var door_y = exit_data.get("y", 0)
+	# Ищем свободную клетку рядом с дверью для обратной двери
 	var return_pos = _find_free_adjacent_cell(door_x, door_y)
+	
 	# Сохраняем информацию для обратной двери в game_controller
 	game_controller.pending_return_location_id = current_location.id
 	game_controller.pending_return_door_x = return_pos.x
 	game_controller.pending_return_door_y = return_pos.y
-
 	game_controller.pending_previous_location = current_location.name
 	
 	# Генерируем новую локацию
