@@ -637,7 +637,7 @@ func _apply_map_data(map_data: Dictionary, entry_door_pos: Vector2i = Vector2i(-
 
 	grid_state.remove_unit("player_1")
 	grid_state.set_unit("player_1", current_player_name, "player", spawn_pos.x, spawn_pos.y)
-	print("Игрок создан на позиции ", player_start[0], ",", player_start[1], " с именем ", current_player_name)
+	print("Игрок создан на позиции ", spawn_pos.x, ",", spawn_pos.y, " с именем ", current_player_name)
 	
 	_refresh_grid()
 	
