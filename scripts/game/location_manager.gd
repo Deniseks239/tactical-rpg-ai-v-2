@@ -53,7 +53,7 @@ func generate_location(description: String, additional_params: Dictionary = {}) 
 	location.save()
 	
 	# 6. Применяем локацию
-	set_current_location(location)
+	set_current_location(location, Vector2i(-1, -1))
 	
 	print("LocationManager: Новая локация сгенерирована из описания: ", location.name)
 	return location
@@ -68,9 +68,9 @@ func load_location(location_id: String) -> LocationData:
 		return loaded
 	return null
 
-func set_current_location(location: LocationData):
+func set_current_location(location: LocationData, entry_door_pos: Vector2i = Vector2i(-1, -1)):
 	current_location = location
-	_apply_location_to_game(location)
+	_apply_location_to_game(location, entry_door_pos)
 
 func _apply_location_to_game(location: LocationData, entry_door_pos: Vector2i = Vector2i(-1, -1)):
 	var game_controller = get_node("/root/GameControllerAuto")
@@ -89,7 +89,7 @@ func _apply_location_to_game(location: LocationData, entry_door_pos: Vector2i = 
 			"exits": location.exits,
 			"player_start": [location.player_start_x, location.player_start_y],
 			"location_name": location.name
-		})
+		}, entry_door_pos)
 		
 		# Обновляем сетку
 		game_controller._refresh_grid()
