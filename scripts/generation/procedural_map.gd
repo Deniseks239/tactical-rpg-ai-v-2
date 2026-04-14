@@ -354,7 +354,21 @@ static func _create_exits(exit_configs: Array, tiles: Array, size: int) -> Array
 					var pos = positions[randi() % positions.size()]
 					x = pos[0]
 					y = pos[1]
-			exits.append({"x": x, "y": y, "description": config.get("description", "Дверь")})
+			
+			# ===== СОХРАНЯЕМ ВСЕ ПОЛЯ, ВКЛЮЧАЯ target_location_id =====
+			var exit_data = {
+				"x": x,
+				"y": y,
+				"description": config.get("description", "Дверь")
+			}
+			# Копируем target_location_id, если он есть
+			if config.has("target_location_id"):
+				exit_data["target_location_id"] = config["target_location_id"]
+			if config.has("target_door_id"):
+				exit_data["target_door_id"] = config["target_door_id"]
+			# ==========================================================
+			
+			exits.append(exit_data)
 			if x >= 0 and x < size and y >= 0 and y < size:
 				tiles[x][y] = TileType.FLOOR  # Клетка с дверью проходима
 		else:
