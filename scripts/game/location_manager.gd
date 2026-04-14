@@ -54,7 +54,23 @@ func generate_location(description: String, additional_params: Dictionary = {}) 
 	
 	# 6. Применяем локацию
 	set_current_location(location, Vector2i(-1, -1))
-	
+	# 7. Обновляем дверь в родительской локации, чтобы она знала ID новой локации
+	if additional_params.has("return_location_id") and additional_params["return_location_id"] != "":
+		var parent_location_id = additional_params["return_location_id"]
+		var parent_location = load_location(parent_location_id)
+		if parent_location:
+			var door_x = additional_params.get("return_door_x", -1)
+			var door_y = additional_params.get("return_door_y", -1)
+			# Ищем дверь в родительской локации и обновляем её target_location_id
+			for exit_data in parent_location.exits:
+				# Дверь могла быть на соседней клетке (обратная), но нам нужна та, через которую вошли
+				# Она находится на позиции, переданной как return_door_x/y
+				if exit_data.get("x") == door_x and exit_data.get("y") == door_y:
+					exit_data["target_location_id"] = location.id
+					print("LocationManager: Обновлена дверь в родительской локации на позиции ", door_x, ",", door_y, " -> target_location_id = ", location.id)
+					break
+			parent_location.save()
+			
 	print("LocationManager: Новая локация сгенерирована из описания: ", location.name)
 	return location
 
