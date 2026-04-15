@@ -77,7 +77,8 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 			"temperature": 0.7,
 			"num_predict": num_predict,
 			"num_ctx": 1024,
-			"num_gpu": 70
+			"num_gpu": 70,
+			"enable_thinking": false
 		}
 	}
 
