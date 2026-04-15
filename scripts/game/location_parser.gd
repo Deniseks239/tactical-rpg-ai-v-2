@@ -1,5 +1,4 @@
 # scripts/game/location_parser.gd
-# scripts/game/location_parser.gd
 extends Node
 class_name LocationParser
 
@@ -25,11 +24,11 @@ static func parse_location_description(description: String) -> Dictionary:
 	params["location_type"] = location_info["type"]
 	params["generator"] = location_info["generator"]
 	
-	# Для города увеличиваем размер
+	# >>> ВРЕМЕННОЕ ИСПРАВЛЕНИЕ: Всегда используем генератор таверны <<<
+	# Игнорируем "city", пока он не готов
 	if params["location_type"] == "city":
-		params["size"] = 48
-		params["width"] = 48
-		params["height"] = 48
+		params["location_type"] = "tavern"
+		params["generator"] = "tavern"
 	
 	# 2. Парсим название
 	var name_match = _extract_name(description)
