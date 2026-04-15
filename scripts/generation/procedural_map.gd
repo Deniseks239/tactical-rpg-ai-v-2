@@ -7,7 +7,8 @@ enum TileType {
 	GRASS,
 	STONE,
 	DIRT,
-	WATER
+	WATER,
+	TABLE
 }
 
 # Основная функция генерации карты по параметрам
@@ -129,6 +130,7 @@ static func _tiles_to_array(tiles: Array) -> Array:
 				TileType.STONE: result[x].append("stone")
 				TileType.DIRT: result[x].append("dirt")
 				TileType.WATER: result[x].append("water")
+				TileType.TABLE: result[x].append("floor")
 	return result
 
 # Применение периметральных стен
