@@ -46,44 +46,56 @@ var tools = [
 ]
 
 func send_request(messages: Array, game_context: Dictionary, additional_context: Dictionary = {}, request_type: String = "default"):
-	# Отменяем предыдущий запрос
 	cancel_current_request()
 	var full_messages = conversation_history.duplicate()
 	full_messages += messages
-	# Формируем промпт
+	
 	var system_prompt = _build_system_prompt(game_context, additional_context, request_type)
 	var ollama_messages = [{"role": "system", "content": system_prompt}] + conversation_history + messages
 	
-	# Создаём HTTP-клиент
 	current_request = HTTPRequest.new()
 	add_child(current_request)
 	current_request.request_completed.connect(_on_request_completed.bind(current_request))
 	
-	# Настраиваем длину ответа
-	var num_predict = 200
+	# ===== ВСЕ ПАРАМЕТРЫ ОПРЕДЕЛЯЕМ ЗДЕСЬ =====
+	var num_predict = 100
+	var ctx_size = 1024
+	var temperature = 0.7
+	
 	if request_type == "location":
 		num_predict = 6000
+		ctx_size = 2048
+	elif request_type == "location_text":
+		num_predict = 200
+		ctx_size = 2048
+	elif request_type == "description":
+		num_predict = 50
+		ctx_size = 512
+		temperature = 0.3
 	elif request_type == "death":
 		num_predict = 50
-	else:
-		num_predict = 100   # уменьшаем с 200
+		ctx_size = 512
+		temperature = 0.3
+	elif request_type == "battle_summary":
+		num_predict = 150
+		ctx_size = 1024
+	# =========================================
 	
-	# Формируем тело запроса
 	var body = {
 		"model": model_name,
 		"messages": ollama_messages,
 		"stream": false,
 		"options": {
 			"flash_attention": true,
-			"temperature": 0.7,
+			"temperature": temperature,
 			"num_predict": num_predict,
-			"num_ctx": 1024,
-			"num_gpu": 70,
+			"num_ctx": ctx_size,
+			"num_gpu": 999,
 			"enable_thinking": false
 		}
 	}
 
-	var json_body = JSON.stringify(body)  # ← используем body, а не request_body
+	var json_body = JSON.stringify(body)
 	var headers = ["Content-Type: application/json"]
 	current_request.request(API_URL, headers, HTTPClient.METHOD_POST, json_body)
 
