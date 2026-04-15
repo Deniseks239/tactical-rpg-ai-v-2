@@ -58,8 +58,7 @@ func _ready():
 
 func _start_game():
 	print("Запрос к AI на текстовое описание начальной локации")
-	var PromptTemplates = load("res://scripts/ai/prompt_templates.gd")
-	var prompt = PromptTemplates.get_start_location_prompt()
+	var prompt = PromptTemplatesAuto.get_start_location_prompt()
 	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "location_text")
 func _get_players_info() -> Array:
 	var players = []
@@ -650,8 +649,7 @@ func request_location_generation(location_context: Dictionary):
 	var context_str = "Переход из локации: " + location_context.get("previous_location", "Неизвестно")
 	context_str += ". Выход описан как: " + location_context.get("exit_description", "дверь")
 	
-	var PromptTemplates = load("res://scripts/ai/prompt_templates.gd")
-	var prompt = PromptTemplates.get_location_prompt_with_context(context_str)
+	var prompt = PromptTemplatesAuto.get_location_prompt_with_context(context_str)
 	ai_client.send_request([{"role": "user", "content": prompt}], {}, location_context, "location_text")
 
 func request_death_description(defender: String):
