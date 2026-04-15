@@ -1,8 +1,31 @@
-static func get_location_prompt() -> String:
-	return """Верни ТОЛЬКО JSON. Формат:
-{"action": "generate_location", "parameters": {"location_name": "название", "description": "описание", "biome": "dungeon", "size": 8, "enemies": [{"type": "goblin", "count": 2}], "exits": [{"x": 1, "y": 1, "description": "Дверь"}], "player_start": [4, 4]}}
-Важно: exits должен быть массивом словарей с полями x, y и description. Не используй ["north"].
-Создай простую локацию. Размер 8x8. Используй не более 2 типов врагов."""
+# scripts/ai/prompt_templates.gd
+extends Node
+class_name PromptTemplates
+
+static func get_start_location_prompt() -> String:
+	return """
+Ты — мастер подземелий. Опиши первую локацию для начала приключения.
+Это может быть таверна, лесная опушка, деревенский дом или пещера.
+Опиши её в 2-3 предложениях.
+Упомяни, что там есть: например, каких врагов или NPC, и есть ли выход.
+Не используй JSON, просто текст.
+"""
+
+static func get_location_prompt_with_context(context: String) -> String:
+	return """
+Ты — мастер подземелий в настольной ролевой игре.
+Опиши локацию, в которой оказался персонаж, учитывая контекст.
+
+Контекст: %s
+
+Опиши локацию в 2-4 предложениях на русском языке. Обязательно упомяни:
+- Что это за место (таверна, пещера, лесной лагерь, дом и т.д.)
+- Кто или что находится рядом (враги, NPC, предметы)
+- Есть ли видимые выходы (двери, проходы, тропы)
+
+Не используй JSON. Просто текст.
+""" % context
+
 static func get_battle_summary_prompt(events: Array, player_name: String) -> String:
 	var prompt = player_name + " совершил несколько действий за ход:\n"
 	for event in events:
@@ -17,4 +40,3 @@ static func get_battle_summary_prompt(events: Array, player_name: String) -> Str
 	
 	prompt += "\nОпиши результаты этих действий одной эпичной фразой на русском языке. Не задавай вопросов. Просто опиши, что произошло."
 	return prompt
-		
