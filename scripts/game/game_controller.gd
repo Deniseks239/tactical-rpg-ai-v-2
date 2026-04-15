@@ -58,6 +58,7 @@ func _ready():
 
 func _start_game():
 	print("Запрос к AI на текстовое описание начальной локации")
+	var PromptTemplates = load("res://scripts/ai/prompt_templates.gd")
 	var prompt = PromptTemplates.get_start_location_prompt()
 	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "location_text")
 func _get_players_info() -> Array:
@@ -145,6 +146,7 @@ func _string_to_tile_type(type_str: String):
 		"stone": return GridState.TileType.STONE
 		"dirt": return GridState.TileType.DIRT
 		"water": return GridState.TileType.WATER
+		"table": return GridState.TileType.FLOOR
 		_:
 			print("Неизвестный тип плитки: ", type_str)
 			return null
@@ -640,25 +642,16 @@ func _apply_map_data(map_data: Dictionary, entry_door_pos: Vector2i = Vector2i(-
 func request_location_generation(location_context: Dictionary):
 	print("Запрос на генерацию новой локации с контекстом: ", location_context)
 	
-	# Сохраняем информацию для обратной двери
 	pending_return_location_id = location_context.get("return_location_id", "")
 	pending_return_door_x = location_context.get("return_door_x", 0)
 	pending_return_door_y = location_context.get("return_door_y", 0)
 	pending_previous_location = location_context.get("previous_location", "Неизвестно")
 	
-	var prompt = """
-Ты — мастер подземелий. Опиши новую локацию для продолжения приключения.
-Предыдущая локация: """ + location_context.get("previous_location", "Неизвестно") + """
-Выход описан как: """ + location_context.get("exit_description", "дверь") + """
-
-Опиши новую локацию в 2-4 предложениях. Упомяни:
-- Какая это местность (пещера, лес, подземелье, город)
-- Какие враги там есть (гоблины, скелеты, орки)
-- Есть ли выход дальше
-
-Не используй JSON. Просто опиши текстом.
-"""
+	var context_str = "Переход из локации: " + location_context.get("previous_location", "Неизвестно")
+	context_str += ". Выход описан как: " + location_context.get("exit_description", "дверь")
 	
+	var PromptTemplates = load("res://scripts/ai/prompt_templates.gd")
+	var prompt = PromptTemplates.get_location_prompt_with_context(context_str)
 	ai_client.send_request([{"role": "user", "content": prompt}], {}, location_context, "location_text")
 
 func request_death_description(defender: String):
