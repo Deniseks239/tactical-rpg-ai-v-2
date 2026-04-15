@@ -74,6 +74,7 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 		"messages": ollama_messages,
 		"stream": false,
 		"options": {
+			"flash_attention": true,
 			"temperature": 0.7,
 			"num_predict": num_predict,
 			"num_ctx": 1024,
