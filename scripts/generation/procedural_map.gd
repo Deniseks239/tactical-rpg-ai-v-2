@@ -460,7 +460,7 @@ static func _get_npc_name(type: String) -> String:
 		_: return "Житель"
 # Генератор для таверны
 static func generate_tavern(params: Dictionary) -> Dictionary:
-	var size = params.get("size", 12)
+	var size = params.get("size", 10)
 	seed(params.get("seed", randi()))
 	
 	var tiles = []
@@ -472,38 +472,30 @@ static func generate_tavern(params: Dictionary) -> Dictionary:
 			tiles[x].append(TileType.FLOOR)
 			heights[x].append(0)
 	
-	# Стены по периметру
 	_apply_perimeter_walls(tiles, size, 1)
 	
-	# Входная дверь (на южной стене, по центру)
 	var door_x = size / 2
 	var door_y = size - 1
 	tiles[door_x][door_y] = TileType.FLOOR
 	
-	# Барная стойка (вдоль северной стены)
 	for x in range(2, size - 2):
-		tiles[x][2] = TileType.TABLE
+		tiles[x][1] = TileType.TABLE
 	
-	# Столы для посетителей (несколько 2x2)
-	var table_positions = [
-		[3, 5], [7, 5], [3, 8], [7, 8]
-	]
+	var table_positions = [[2, 4], [6, 4], [2, 7], [6, 7]]
 	for pos in table_positions:
 		for dx in range(2):
 			for dy in range(2):
 				var nx = pos[0] + dx
 				var ny = pos[1] + dy
-				if nx < size - 1 and ny < size - 1:
+				if nx < size - 1 and ny < size - 1 and tiles[nx][ny] != TileType.WALL:
 					tiles[nx][ny] = TileType.TABLE
 	
-	# Выходы (только входная дверь, если не указано иное)
 	var exits = []
-	if params.has("exits"):
+	if params.has("exits") and not params["exits"].is_empty():
 		exits = _create_exits(params["exits"], tiles, size)
 	else:
 		exits = [{"x": door_x, "y": door_y, "description": "Входная дверь"}]
 	
-	# Враги и NPC
 	var enemies = []
 	if params.has("enemies"):
 		enemies = _place_enemies(params["enemies"], tiles, size)
