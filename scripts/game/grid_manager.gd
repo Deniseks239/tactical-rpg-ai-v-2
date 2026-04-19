@@ -135,7 +135,7 @@ func _create_grid():
 			var tile_type = grid_state.tiles[x][y]["type"]
 			match tile_type:
 				GridState.TileType.FLOOR:
-					rect.color = Color(0.3, 0.3, 0.3, 1.0)
+					rect.color = Color(0.6, 0.6, 0.6, 1.0)
 				GridState.TileType.WALL:
 					rect.color = Color(0.7, 0.2, 0.2, 1.0)
 				GridState.TileType.TABLE:
