@@ -5,7 +5,7 @@ signal response_received(response: Dictionary)
 signal error_occurred(error: String)
 
 const API_URL = "http://localhost:11434/api/chat"
-var model_name: String = "gemma4:e2b"
+var model_name: String = "dnd-master"
 var current_request: HTTPRequest = null
 var PromptTemplates = preload("res://scripts/ai/prompt_templates.gd")
 var conversation_history: Array = []
@@ -100,62 +100,9 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 	current_request.request(API_URL, headers, HTTPClient.METHOD_POST, json_body)
 
 func _build_system_prompt(context: Dictionary, additional: Dictionary, request_type: String) -> String:
-	# Для текстовой генерации локации (простое описание)
-	if request_type == "location_text":
-		return "Ты — мастер подземелий. Опиши локацию для RPG игры. Используй 2-4 предложения. Не используй JSON. Просто опиши, что видит игрок: какие враги, какие выходы, какие особенности."
-	
-	# Для описаний атак
-	if request_type == "description":
-		var is_hit = additional.get("is_hit", false)
-		var damage = additional.get("damage", 0)
-		var attacker = additional.get("attacker", "")
-		var defender = additional.get("defender", "")
-		
-		if is_hit:
-			if damage <= 0:
-				return "Опиши одной короткой фразой: " + attacker + " атакует, но не наносит урона. Максимум 10 слов."
-			else:
-				var severity = "лёгкий"
-				if damage >= 6:
-					severity = "тяжёлый"
-				elif damage >= 4:
-					severity = "средний"
-				return "Опиши одной короткой фразой: " + attacker + " наносит " + str(damage) + " урона (" + severity + "). Максимум 12 слов."
-		else:
-			return "Опиши одной короткой фразой: " + attacker + " промахивается. Максимум 10 слов."
-	
-	# Для суммарного описания хода
-	if request_type == "battle_summary":
-		var events = additional.get("events", [])
-		var player_name = additional.get("player_name", "Игрок")
-		return PromptTemplates.get_battle_summary_prompt(events, player_name)
-	
-	# Для описания смерти
-	if request_type == "death":
-		var defender = additional.get("defender", "враг")
-		return "Опиши одной фразой смерть " + defender + ". Максимум 15 слов."
-	
-	# Для генерации локации через JSON (старый способ, оставляем для совместимости)
-	if request_type == "location":
-		return PromptTemplates.get_location_prompt()
-	
-	# Для теста инструментов
-	if request_type == "test_tools":
-		return """
-	Ты — помощник в RPG игре. Игрок пишет действие. Твоя задача — определить команду и цель.
-	
-	Отвечай ТОЛЬКО в формате:
-	[команда:цель:параметр]
-	
-	Примеры:
-	- "Атакую гоблина" → [attack:гоблин:0]
-	- "Бегу на север" → [move:север:1]
-	- "Осматриваю комнату" → [examine:комната:0]
-	
-	Сейчас игрок написал: """ + additional.get("input", "")
-	
-	# Значение по умолчанию
-	return "Ты — мастер подземелий. Отвечай кратко."
+	# System Prompt теперь вшит в модель "dnd-master" через Modelfile.
+	# Возвращаем пустую строку, чтобы не тратить токены на его повторную отправку.
+	return ""
 
 func _on_request_completed(_result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, http: HTTPRequest):
 	http.queue_free()
