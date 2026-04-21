@@ -18,6 +18,7 @@ var pending_return_location_id: String = ""
 var pending_return_door_x: int = 0
 var pending_return_door_y: int = 0
 var pending_previous_location: String = ""
+var loading_screen: Control = null
 
 func _ready():
 	grid_state = GridState.new()
@@ -57,6 +58,7 @@ func _ready():
 	print("GameController готов. Ожидание создания персонажа.")
 
 func _start_game():
+	_show_loading_screen("Мастер подземелий создаёт мир...")
 	print("Запрос к AI на текстовое описание начальной локации")
 	var prompt = PromptTemplatesAuto.get_start_location_prompt()
 	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "location_text")
@@ -886,3 +888,35 @@ func _find_free_cell_near(pos: Vector2i, map_data: Dictionary) -> Vector2i:
 			continue
 		return Vector2i(nx, ny)
 	return Vector2i(-1, -1)
+
+func _show_loading_screen(text: String = "Загрузка..."):
+	if loading_screen:
+		return
+	
+	loading_screen = Control.new()
+	loading_screen.set_anchors_preset(Control.PRESET_FULL_RECT)
+	loading_screen.mouse_filter = Control.MOUSE_FILTER_STOP
+	loading_screen.z_index = 100
+	
+	# Полупрозрачный чёрный фон на весь экран
+	var panel = Panel.new()
+	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	panel.modulate = Color(0, 0, 0, 0.85)  # почти чёрный, 85% непрозрачности
+	loading_screen.add_child(panel)
+	
+	# Текст по центру
+	var label = Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	label.add_theme_font_size_override("font_size", 24)
+	label.modulate = Color(1, 1, 1, 1)
+	panel.add_child(label)
+	
+	get_tree().root.add_child(loading_screen)
+
+func _hide_loading_screen():
+	if loading_screen:
+		loading_screen.queue_free()
+		loading_screen = null
