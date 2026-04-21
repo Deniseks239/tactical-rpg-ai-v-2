@@ -893,18 +893,16 @@ func _show_loading_screen(text: String = "Загрузка..."):
 	if loading_screen:
 		return
 	
-	loading_screen = Control.new()
-	loading_screen.set_anchors_preset(Control.PRESET_FULL_RECT)
-	loading_screen.mouse_filter = Control.MOUSE_FILTER_STOP
-	loading_screen.z_index = 100
+	# Создаём CanvasLayer, чтобы экран был поверх всего и не зависел от камеры
+	var canvas_layer = CanvasLayer.new()
+	canvas_layer.layer = 128  # максимальный слой, поверх всего
+	loading_screen = canvas_layer
 	
-	# Полупрозрачный чёрный фон на весь экран
 	var panel = Panel.new()
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	panel.modulate = Color(0, 0, 0, 0.85)  # почти чёрный, 85% непрозрачности
-	loading_screen.add_child(panel)
+	panel.modulate = Color(0, 0, 0, 0.85)
+	canvas_layer.add_child(panel)
 	
-	# Текст по центру
 	var label = Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -912,9 +910,9 @@ func _show_loading_screen(text: String = "Загрузка..."):
 	label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	label.add_theme_font_size_override("font_size", 24)
 	label.modulate = Color(1, 1, 1, 1)
-	panel.add_child(label)
+	canvas_layer.add_child(label)
 	
-	get_tree().root.add_child(loading_screen)
+	get_tree().root.add_child(canvas_layer)
 
 func _hide_loading_screen():
 	if loading_screen:
