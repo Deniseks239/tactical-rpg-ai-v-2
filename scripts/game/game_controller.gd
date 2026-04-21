@@ -18,7 +18,7 @@ var pending_return_location_id: String = ""
 var pending_return_door_x: int = 0
 var pending_return_door_y: int = 0
 var pending_previous_location: String = ""
-var loading_screen: Control = null
+var loading_screen: CanvasLayer = null
 
 func _ready():
 	grid_state = GridState.new()
@@ -893,9 +893,8 @@ func _show_loading_screen(text: String = "Загрузка..."):
 	if loading_screen:
 		return
 	
-	# Создаём CanvasLayer, чтобы экран был поверх всего и не зависел от камеры
 	var canvas_layer = CanvasLayer.new()
-	canvas_layer.layer = 128  # максимальный слой, поверх всего
+	canvas_layer.layer = 128
 	loading_screen = canvas_layer
 	
 	var panel = Panel.new()
