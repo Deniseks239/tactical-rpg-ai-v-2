@@ -5,7 +5,7 @@ signal response_received(response: Dictionary)
 signal error_occurred(error: String)
 
 const API_URL = "http://localhost:11434/api/chat"
-var model_name: String = "dnd-master"
+var model_name: String = "dnd-master-test"
 var current_request: HTTPRequest = null
 var PromptTemplates = preload("res://scripts/ai/prompt_templates.gd")
 var conversation_history: Array = []
