@@ -26,9 +26,11 @@ static func parse_location_description(description: String) -> Dictionary:
 	
 	# >>> ВРЕМЕННОЕ ИСПРАВЛЕНИЕ: Всегда используем генератор таверны <<<
 	# Игнорируем "city", пока он не готов
-	if params["location_type"] == "city":
-		params["location_type"] = "tavern"
-		params["generator"] = "tavern"
+	if params["location_type"] == "tavern":
+		# Спавним игрока напротив входной двери (внизу по центру)
+		var size = params.get("size", 8)
+		params["player_start"] = [size / 2, size - 2]
+		print("LocationParser: Для таверны игрок появится у входа на позиции ", params["player_start"])
 	
 	# 2. Парсим название
 	var name_match = _extract_name(description)
