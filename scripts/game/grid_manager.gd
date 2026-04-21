@@ -150,8 +150,6 @@ func _create_grid():
 					rect.color = Color(0.8, 0.5, 0.2, 1.0)
 				GridState.TileType.WATER:
 					rect.color = Color(0.2, 0.5, 0.9, 1.0)
-				_:
-					rect.color = Color(0.4, 0.4, 0.4, 1.0)
 				GridState.TileType.ROAD:
 					rect.color = Color(0.5, 0.4, 0.3, 1.0)
 				GridState.TileType.HOUSE_WALL:
@@ -174,6 +172,8 @@ func _create_grid():
 					rect.color = Color(0.2, 0.4, 0.8, 1.0)
 				GridState.TileType.STATUE:
 					rect.color = Color(0.7, 0.7, 0.6, 1.0)
+				_:
+					rect.color = Color(0.4, 0.4, 0.4, 1.0)
 			add_child(rect)
 			
 			# Подсветка дверей из LocationManager (старый способ)
@@ -211,7 +211,7 @@ func _create_grid():
 					hp_label.add_theme_font_size_override("font_size", 12)
 					add_child(hp_label)
 	
-# ===== ОТРИСОВКА ДВЕРЕЙ ИЗ grid_state.doors =====
+	# ===== ОТРИСОВКА ДВЕРЕЙ ПОВЕРХ ВСЕГО =====
 	if "doors" in grid_state and grid_state.doors is Dictionary:
 		for door_key in grid_state.doors.keys():
 			var door = grid_state.doors[door_key]
@@ -221,21 +221,23 @@ func _create_grid():
 			var x = int(parts[0])
 			var y = int(parts[1])
 			
+			# Коричневый прямоугольник двери
 			var door_rect = ColorRect.new()
 			door_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			door_rect.size = Vector2(grid_state.cell_size, grid_state.cell_size)
 			door_rect.position = Vector2(x * grid_state.cell_size, y * grid_state.cell_size)
-			door_rect.color = Color(0.8, 0.4, 0.2, 0.9)  # коричневый, как дверь
-			door_rect.z_index = 10  # <-- ВАЖНО: поверх стен и пола
+			door_rect.color = Color(0.6, 0.3, 0.1, 0.95)  # коричневый, непрозрачный
+			door_rect.z_index = 10  # поверх стен и пола
 			add_child(door_rect)
 			
+			# Иконка двери
 			var door_label = Label.new()
 			door_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			door_label.text = "🚪"
-			door_label.position = door_rect.position + Vector2(5, 5)
+			door_label.position = door_rect.position + Vector2(grid_state.cell_size / 4, grid_state.cell_size / 4)
 			door_label.z_index = 11
 			add_child(door_label)
-# ===========================================================
+	# ===========================================
 
 func _on_cell_pressed(x: int, y: int):
 	# ===== ПРОВЕРКА НА ДВЕРЬ (ИСПРАВЛЕНО) =====
