@@ -44,7 +44,7 @@ func _ready():
 	# AI клиент
 	ai_client = AIClientOllama.new()
 	add_child(ai_client)
-	ai_client.model_name = "gemma3:4b"
+	ai_client.model_name = "dnd-master-nothink"
 	ai_client.response_received.connect(_on_ai_response)
 	ai_client.error_occurred.connect(_on_ai_error)
 	
