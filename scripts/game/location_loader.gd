@@ -27,13 +27,19 @@ func generate_location_async(params: Dictionary) -> void:
 func _on_ai_response(response: String, params: Dictionary) -> void:
 	print("LocationLoader: Ответ AI получен, длина: ", response.length())
 	var location_data = location_parser.parse_location_description(response)
+	print("LocationLoader: Результат парсинга: ", location_data)
 	if location_data:
 		location_data.id = _generate_location_id()
 		location_data.generation_params = params
+		print("LocationLoader: Парсинг успешен, вызываю _on_location_generated")
 		_on_location_generated(location_data, params)
 	else:
 		location_generation_failed.emit("Не удалось распарсить ответ AI")
 		printerr("LocationLoader: Парсинг локации провален")
+		# Скрываем экран даже при ошибке, чтобы не вис
+		var gc = Engine.get_main_loop().get_node("GameControllerAuto")
+		if gc and gc.has_method("_hide_loading_screen"):
+			gc._hide_loading_screen()
 
 func _on_location_generated(location_data: LocationData, params: Dictionary) -> void:
 	var gc = Engine.get_main_loop().get_node("GameControllerAuto")
