@@ -40,6 +40,8 @@ func _on_location_generated(location_data: LocationData, params: Dictionary) -> 
 	if gc and gc.has_method("_hide_loading_screen"):
 		gc._hide_loading_screen()
 		print("LocationLoader: Экран загрузки скрыт через Engine.get_main_loop()")
+	else:
+		printerr("LocationLoader: НЕ УДАЛОСЬ СКРЫТЬ ЭКРАН ЗАГРУЗКИ!")
 	print("LocationLoader: _on_location_generated. Новая локация ID: ", location_data.id)
 	
 	location_manager.add_location(location_data)
