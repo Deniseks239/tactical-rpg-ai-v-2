@@ -91,7 +91,7 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 			"num_predict": num_predict,
 			"num_ctx": ctx_size,
 			"num_gpu": 999,
-			"enable_thinking": false
+			"think": false
 		}
 	}
 
