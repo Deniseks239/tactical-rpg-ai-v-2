@@ -59,6 +59,8 @@ func _ready():
 
 func _start_game():
 	_show_loading_screen("Мастер подземелий создаёт мир...")
+	ai_client.model_name = "dnd-master-test"
+	print("GameController: Принудительно установлена модель ", ai_client.model_name)
 	print("Запрос к AI на текстовое описание начальной локации")
 	var prompt = PromptTemplatesAuto.get_start_location_prompt()
 	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "location_text")
