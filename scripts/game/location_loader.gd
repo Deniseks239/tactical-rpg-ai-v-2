@@ -53,9 +53,9 @@ func _on_ai_response(response: String, params: Dictionary) -> void:
 		printerr("LocationLoader: Парсинг локации провален")
 
 func _on_location_generated(location_data: LocationData, params: Dictionary) -> void:
-	var game_controller = get_node("/root/GameControllerAuto")
-	if game_controller and game_controller.has_method("_hide_loading_screen"):
-		game_controller._hide_loading_screen()
+	var gc = Engine.get_main_loop().get_node("GameControllerAuto")
+	if gc and gc.has_method("_hide_loading_screen"):
+		gc._hide_loading_screen()
 	print("LocationLoader: _on_location_generated. Новая локация ID: ", location_data.id)
 	
 	location_manager.add_location(location_data)
