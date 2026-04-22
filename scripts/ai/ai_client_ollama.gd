@@ -66,7 +66,7 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 		num_predict = 6000
 		ctx_size = 2048
 	elif request_type == "location_text":
-		num_predict = 200
+		num_predict = 400
 		ctx_size = 2048
 	elif request_type == "description":
 		num_predict = 50
@@ -91,7 +91,7 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 			"num_predict": num_predict,
 			"num_ctx": ctx_size,
 			"num_gpu": 999,
-			"think": false
+			"enable_thinking": false 
 		}
 	}
 
@@ -128,6 +128,19 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 		return
 	
 	var content = response["message"].get("content", "")
+	
+	# ===== ИЗВЛЕЧЕНИЕ ТЕКСТА ИЗ THINKING (ДЛЯ GEMMA 4) =====
+	if content == "" and response["message"].has("thinking"):
+		var thinking = response["message"]["thinking"]
+		var done_marker = "...done thinking."
+		var marker_pos = thinking.find(done_marker)
+		if marker_pos != -1:
+			content = thinking.substr(marker_pos + done_marker.length()).strip_edges()
+			print("Извлечён текст из thinking (первые 200 символов):\n", content.substr(0, 200))
+		else:
+			print("Маркер '...done thinking.' не найден в thinking")
+	# =====================================================
+	
 	content = content.strip_edges()
 	
 	# Удаляем markdown обрамление
@@ -144,19 +157,19 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	if content.begins_with("{{") and content.ends_with("}}"):
 		content = content.substr(1, content.length() - 2)
 	
-	print("Контент после очистки (первые 500 символов):\n", content.substr(0, 500))
+	print("Контент после очистки (первые 500 символов):\n", content.substr(0, min(500, content.length())))
+	
 	# Если ответ начинается не с { или [, не пытаемся парсить JSON
 	if not content.begins_with("{") and not content.begins_with("["):
 		print("Обычный текст, не JSON")
 		response_received.emit({"type": "text", "data": content})
 		return
-	# ===== НОВАЯ ПРОВЕРКА: структурированная команда =====
+	
 	# Проверяем, не является ли ответ командой в формате [команда:цель:число]
 	if content.begins_with("[") and content.ends_with("]"):
 		print("Обнаружена команда в структурированном формате")
 		response_received.emit({"type": "text", "data": content})
 		return
-	# ===================================================
 	
 	# Пробуем распарсить JSON
 	var parsed = JSON.parse_string(content)
