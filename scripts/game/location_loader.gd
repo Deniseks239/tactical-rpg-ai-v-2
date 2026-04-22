@@ -13,7 +13,7 @@ var current_generation_params: Dictionary = {}
 
 func generate_location_async(params: Dictionary) -> void:
 	if ai_client:
-		ai_client.model_name = "dnd-master-test"
+		ai_client.model_name = "dnd-master-nothink"
 		print("LocationLoader: Принудительно установлена модель ", ai_client.model_name)
 	current_generation_params = params
 	
