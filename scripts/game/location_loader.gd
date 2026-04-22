@@ -78,8 +78,6 @@ func _on_location_generated(location_data: LocationData, params: Dictionary) -> 
 		printerr("LocationLoader: game_controller не найден!")
 	
 	location_generated.emit(location_data)
-	if game_controller and game_controller.has_method("_hide_loading_screen"):
-		game_controller._hide_loading_screen()
 
 func _add_return_door(location_id: String, previous_location_id: String, return_door_position: Vector2i, return_door_description: String = "Обратный путь") -> void:
 	print("LocationLoader: _add_return_door вызван для локации ", location_id)
