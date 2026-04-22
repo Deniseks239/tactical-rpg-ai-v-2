@@ -12,33 +12,16 @@ signal location_generation_failed(error: String)
 var current_generation_params: Dictionary = {}
 
 func generate_location_async(params: Dictionary) -> void:
+	if ai_client:
+		ai_client.model_name = "dnd-master-test"
+		print("LocationLoader: Принудительно установлена модель ", ai_client.model_name)
 	current_generation_params = params
 	
 	# Прямой текст промпта без PromptTemplates
 	var prompt = """
 	Сгенерируй JSON-описание локации для пошаговой RPG.
-	Тип локации: {location_type}
-	Размер сетки: {size}x{size}
-	Сложность: {difficulty}
-	Дополнительный контекст: {context}
-	
-	Формат ответа должен быть строго JSON с полями:
-	{{
-		"location_name": "название",
-		"biome": "лес/пещера/город/подземелье",
-		"size": {size},
-		"enemies": [{{"type": "гоблин", "count": 1}}],
-		"exits": [{{"x": 0, "y": 0, "description": "выход"}}],
-		"player_start": [4, 4],
-		"description": "атмосферное описание"
-	}}
-	""".format({
-		"location_type": params.get("location_type", "random"),
-		"size": params.get("size", 8),
-		"difficulty": params.get("difficulty", "normal"),
-		"context": params.get("context", "")
-	})
-	
+	...
+	"""
 	ai_client.generate_async(prompt, _on_ai_response.bind(params))
 
 func _on_ai_response(response: String, params: Dictionary) -> void:
@@ -56,6 +39,7 @@ func _on_location_generated(location_data: LocationData, params: Dictionary) -> 
 	var gc = Engine.get_main_loop().get_node("GameControllerAuto")
 	if gc and gc.has_method("_hide_loading_screen"):
 		gc._hide_loading_screen()
+		print("LocationLoader: Экран загрузки скрыт через Engine.get_main_loop()")
 	print("LocationLoader: _on_location_generated. Новая локация ID: ", location_data.id)
 	
 	location_manager.add_location(location_data)
