@@ -72,6 +72,10 @@ func generate_location(description: String, additional_params: Dictionary = {}) 
 			parent_location.save()
 			
 	print("LocationManager: Новая локация сгенерирована из описания: ", location.name)
+	var gc = Engine.get_main_loop().root.get_node("GameControllerAuto")
+	if gc and gc.has_method("_hide_loading_screen"):
+		gc._hide_loading_screen()
+		print("LocationManager: Экран загрузки скрыт")
 	return location
 
 func load_location(location_id: String) -> LocationData:
