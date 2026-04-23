@@ -40,3 +40,21 @@ static func get_battle_summary_prompt(events: Array, player_name: String) -> Str
 	
 	prompt += "\nОпиши результаты этих действий одной эпичной фразой на русском языке. Не задавай вопросов. Просто опиши, что произошло."
 	return prompt
+static func get_story_intro_prompt(characters: Array) -> String:
+	var chars_desc = ""
+	for char in characters:
+		chars_desc += "- %s (%s %s)\n" % [char.character_name, char.race, char.class_name]
+	
+	return """
+Ты — Мастер Подземелий. Придумай завязку сюжета для начала приключения.
+
+Персонажи игроков:
+%s
+
+Опиши в 3-5 предложениях:
+1. Где находятся герои и почему они там оказались.
+2. Какая проблема или загадка перед ними стоит.
+3. Кто или что им угрожает (или наоборот, кто может помочь).
+
+Не используй JSON. Просто связный текст от второго лица ("вы").
+""" % chars_desc
