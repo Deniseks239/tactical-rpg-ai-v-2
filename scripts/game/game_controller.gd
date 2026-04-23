@@ -848,8 +848,8 @@ func start_with_character(character: CharacterData):
 		"inventory": character.inventory
 	}
 	
-	# Сразу запускаем генерацию локации (как было раньше)
-	_start_game()
+	_show_loading_screen("Мастер подземелий плетёт историю...")
+	_request_story_intro([character])
 func request_victory_description():
 	is_waiting_for_ai = true
 	game_message.emit("AI описывает победу...")
@@ -929,13 +929,23 @@ func _request_story_intro(characters: Array):
 	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "story")
 
 func _on_story_received(story_text: String):
-	story_intro = story_text
-	print("Сюжетная завязка получена:\n", story_text)
-	
-	# Обновляем экран загрузки
-	_show_loading_screen("Мастер подземелий создаёт мир...")
-	
-	# Добавляем историю в контекст для генерации локации
-	var location_prompt = PromptTemplatesAuto.get_location_prompt_with_context(story_text)
-	pending_action = "location_text"
-	ai_client.send_request([{"role": "user", "content": location_prompt}], {}, {}, "location_text")
+	# Разделяем историю и описание локации по маркеру "---"
+	var parts = story_text.split("---")
+	if parts.size() >= 2:
+		story_intro = parts[0].strip_edges()
+		var location_desc = parts[1].strip_edges()
+		print("Сюжетная завязка:\n", story_intro)
+		print("Описание локации:\n", location_desc)
+		
+		# Отправляем описание на генерацию локации
+		var location_manager = get_node("/root/LocationManagerAuto")
+		if location_manager:
+			var new_location = location_manager.generate_location(location_desc, {})
+			location_manager.set_current_location(new_location)
+	else:
+		# Если разделителя нет, используем весь текст как локацию
+		print("Разделитель не найден, использую весь текст как локацию")
+		var location_manager = get_node("/root/LocationManagerAuto")
+		if location_manager:
+			var new_location = location_manager.generate_location(story_text, {})
+			location_manager.set_current_location(new_location)
