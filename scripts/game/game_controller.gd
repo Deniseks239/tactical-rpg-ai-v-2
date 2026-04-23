@@ -848,11 +848,8 @@ func start_with_character(character: CharacterData):
 		"inventory": character.inventory
 	}
 	
-	# Показываем экран загрузки
-	_show_loading_screen("Мастер подземелий плетёт историю...")
-	
-	# Запрашиваем историю
-	_request_story_intro([character])
+	# Сразу запускаем генерацию локации (как было раньше)
+	_start_game()
 func request_victory_description():
 	is_waiting_for_ai = true
 	game_message.emit("AI описывает победу...")
