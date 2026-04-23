@@ -127,21 +127,14 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 		response_received.emit({"type": "tool_calls", "data": tool_calls})
 		return
 	
-	var content = response["message"].get("content", "")
-	
-	# ===== ИЗВЛЕЧЕНИЕ ТЕКСТА ИЗ THINKING (ДЛЯ GEMMA 4) =====
+	# В функции _on_request_completed
+	var content = response["message"]["content"]
 	if content == "" and response["message"].has("thinking"):
 		var thinking = response["message"]["thinking"]
 		var done_marker = "...done thinking."
-		var marker_pos = thinking.find(done_marker)
-		if marker_pos != -1:
-			content = thinking.substr(marker_pos + done_marker.length()).strip_edges()
-			print("Извлечён текст из thinking (первые 200 символов):\n", content.substr(0, 200))
-		else:
-			print("Маркер '...done thinking.' не найден в thinking")
-	# =====================================================
-	
-	content = content.strip_edges()
+		var text_after = thinking.substr(thinking.find(done_marker) + done_marker.length())
+		# Берём последние 2-3 предложения
+		content = text_after.strip_edges()
 	
 	# Удаляем markdown обрамление
 	if content.begins_with("```json"):
