@@ -57,19 +57,6 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 	current_request = HTTPRequest.new()
 	add_child(current_request)
 	current_request.request_completed.connect(_on_request_completed.bind(current_request))
-
-	# Защита от зависания
-	var timeout_timer = Timer.new()
-	timeout_timer.one_shot = true
-	timeout_timer.wait_time = 60.0
-	timeout_timer.timeout.connect(func():
-		if current_request and current_request.is_inside_tree():
-			printerr("AIClient: ТАЙМАУТ запроса типа ", request_type, "! Отменяем...")
-			cancel_current_request()
-			error_occurred.emit("Таймаут запроса к Ollama")
-	)
-	add_child(timeout_timer)
-	timeout_timer.start()
 	
 	# ===== ВСЕ ПАРАМЕТРЫ ОПРЕДЕЛЯЕМ ЗДЕСЬ =====
 	var num_predict = 100
