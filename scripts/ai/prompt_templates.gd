@@ -43,7 +43,7 @@ static func get_battle_summary_prompt(events: Array, player_name: String) -> Str
 static func get_story_intro_prompt(characters: Array) -> String:
 	var chars_desc = ""
 	for char in characters:
-		chars_desc += "- %s (%s %s)\n" % [char.character_name, char.race, char.class_name]
+		chars_desc += "- %s (%s %s)\n" % [char.character_name, char.race, char.class_type]
 	
 	return """
 Ты — Мастер Подземелий. Придумай завязку сюжета для начала приключения.
