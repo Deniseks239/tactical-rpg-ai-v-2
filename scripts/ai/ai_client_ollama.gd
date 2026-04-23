@@ -46,6 +46,7 @@ var tools = [
 ]
 
 func send_request(messages: Array, game_context: Dictionary, additional_context: Dictionary = {}, request_type: String = "default"):
+	print("AIClient: send_request вызван с типом ", request_type)
 	cancel_current_request()
 	var full_messages = conversation_history.duplicate()
 	full_messages += messages
@@ -80,7 +81,7 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 		num_predict = 150
 		ctx_size = 1024
 	elif request_type == "story":
-		num_predict = 300
+		num_predict = 400
 		ctx_size = 2048
 		temperature = 0.7
 	# =========================================
