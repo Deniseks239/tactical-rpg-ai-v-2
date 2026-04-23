@@ -79,6 +79,10 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 	elif request_type == "battle_summary":
 		num_predict = 150
 		ctx_size = 1024
+	elif request_type == "story":
+		num_predict = 300
+		ctx_size = 2048
+		temperature = 0.7
 	# =========================================
 	
 	var body = {
