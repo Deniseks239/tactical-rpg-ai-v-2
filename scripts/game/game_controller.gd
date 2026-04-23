@@ -19,6 +19,7 @@ var pending_return_door_x: int = 0
 var pending_return_door_y: int = 0
 var pending_previous_location: String = ""
 var loading_screen: CanvasLayer = null
+var story_intro: String = ""
 
 func _ready():
 	grid_state = GridState.new()
@@ -183,6 +184,9 @@ func _on_ai_response(response: Dictionary):
 	
 	elif typ == "text":
 		var text = response["data"]
+		if pending_action == "story_intro":
+			_on_story_received(text)
+			return
 		
 		# ===== ПРОВЕРЯЕМ JSON ДЛЯ ГЕНЕРАЦИИ ЛОКАЦИИ (старый способ) =====
 		var json_start = text.find("{")
@@ -829,10 +833,8 @@ func skip_turn():
 func start_with_character(character: CharacterData):
 	print("Запуск игры с персонажем: ", character.character_name)
 	
-	# Сохраняем имя персонажа в переменную
 	current_player_name = character.character_name
 	
-	# Обновляем данные игрока
 	grid_state.remove_unit("player_1")
 	grid_state.set_unit("player_1", character.character_name, "player", 3, 4)
 	
@@ -845,8 +847,12 @@ func start_with_character(character: CharacterData):
 		"attack_bonus": 5,
 		"inventory": character.inventory
 	}
-		
-	_start_game()
+	
+	# Показываем экран загрузки
+	_show_loading_screen("Мастер подземелий плетёт историю...")
+	
+	# Запрашиваем историю
+	_request_story_intro([character])
 func request_victory_description():
 	is_waiting_for_ai = true
 	game_message.emit("AI описывает победу...")
@@ -919,3 +925,20 @@ func _hide_loading_screen():
 	if loading_screen:
 		loading_screen.queue_free()
 		loading_screen = null
+func _request_story_intro(characters: Array):
+	var prompt = PromptTemplatesAuto.get_story_intro_prompt(characters)
+	ai_client.model_name = "dnd-master-nothink"
+	pending_action = "story_intro"
+	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "story")
+
+func _on_story_received(story_text: String):
+	story_intro = story_text
+	print("Сюжетная завязка получена:\n", story_text)
+	
+	# Обновляем экран загрузки
+	_show_loading_screen("Мастер подземелий создаёт мир...")
+	
+	# Добавляем историю в контекст для генерации локации
+	var location_prompt = PromptTemplatesAuto.get_location_prompt_with_context(story_text)
+	pending_action = "location_text"
+	ai_client.send_request([{"role": "user", "content": location_prompt}], {}, {}, "location_text")
