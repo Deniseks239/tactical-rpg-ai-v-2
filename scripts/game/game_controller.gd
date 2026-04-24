@@ -929,33 +929,12 @@ func _request_story_intro(characters: Array):
 	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "story")
 
 func _on_story_received(story_text: String):
-	# Пробуем разные разделители
-	var separator = "---"
-	var parts = story_text.split(separator)
+	# Сохраняем полученный текст как сюжетную завязку
+	story_intro = story_text.strip_edges()
+	print("Сюжетная завязка сохранена:\n", story_intro)
 	
-	# Если разделитель не найден, ищем "Завязка сюжета" как маркер
-	if parts.size() < 2:
-		separator = "Завязка сюжета"
-		parts = story_text.split(separator)
-	
-	# Если всё ещё не разделилось, ищем "Описание локации"
-	if parts.size() < 2:
-		separator = "Описание локации"
-		parts = story_text.split(separator)
-	
-	if parts.size() >= 2:
-		story_intro = parts[0].strip_edges()
-		var location_desc = parts[1].strip_edges()
-		print("Сюжетная завязка:\n", story_intro)
-		print("Описание локации:\n", location_desc)
-		
-		var location_manager = get_node("/root/LocationManagerAuto")
-		if location_manager:
-			var new_location = location_manager.generate_location(location_desc, {})
-			location_manager.set_current_location(new_location)
-	else:
-		print("Разделитель не найден, использую весь текст как локацию")
-		var location_manager = get_node("/root/LocationManagerAuto")
-		if location_manager:
-			var new_location = location_manager.generate_location(story_text, {})
-			location_manager.set_current_location(new_location)
+	# Сразу используем этот же текст для генерации локации
+	var location_manager = get_node("/root/LocationManagerAuto")
+	if location_manager:
+		var new_location = location_manager.generate_location(story_text, {})
+		location_manager.set_current_location(new_location)
