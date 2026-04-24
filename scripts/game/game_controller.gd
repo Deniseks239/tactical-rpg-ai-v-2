@@ -646,20 +646,62 @@ func _apply_map_data(map_data: Dictionary, entry_door_pos: Vector2i = Vector2i(-
 	combat_state.initiative_order = []
 	combat_state.current_turn_index = 0
 	combat_state.action_points = 3
+
 func request_location_generation(location_context: Dictionary):
-	print("Запрос на генерацию новой локации с контекстом: ", location_context)
+	print("Запрос на вход в дверь с контекстом: ", location_context)
 	
 	pending_return_location_id = location_context.get("return_location_id", "")
 	pending_return_door_x = location_context.get("return_door_x", 0)
 	pending_return_door_y = location_context.get("return_door_y", 0)
 	pending_previous_location = location_context.get("previous_location", "Неизвестно")
 	
-	var context_str = "Переход из локации: " + location_context.get("previous_location", "Неизвестно")
-	context_str += ". Выход описан как: " + location_context.get("exit_description", "дверь")
+	# НОВОЕ: Проверяем target_location_id из двери
+	var target_id = location_context.get("target_location_id", "")
 	
-	var prompt = PromptTemplatesAuto.get_location_prompt_with_context(context_str)
-	ai_client.send_request([{"role": "user", "content": prompt}], {}, location_context, "location_text")
-
+	if target_id != "":
+		print("GameController: Целевая локация указана в двери: ", target_id)
+		
+		var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
+		var location_manager = get_node("/root/LocationManagerAuto")
+		
+		# Проверяем, существует ли уже эта локация
+		if location_manager and location_manager.load_location(target_id):
+			print("GameController: Локация уже существует, загружаем ", target_id)
+			location_manager.get_or_create_location(target_id, "", {
+				"return_location_id": pending_return_location_id,
+				"return_door_x": pending_return_door_x,
+				"return_door_y": pending_return_door_y,
+				"previous_location": pending_previous_location
+			})
+			return
+		
+		# Если есть структура кампании — используем описание оттуда
+		if campaign_mgr and campaign_mgr.has_campaign():
+			var loc_info = campaign_mgr.get_location_info(target_id)
+			if not loc_info.is_empty():
+				print("GameController: Локация из структуры кампании, генерируем ", target_id)
+				location_manager.get_or_create_location(target_id, loc_info.get("description", ""), {
+					"return_location_id": pending_return_location_id,
+					"return_door_x": pending_return_door_x,
+					"return_door_y": pending_return_door_y,
+					"previous_location": pending_previous_location
+				})
+				return
+		
+		# Если ничего не нашли — запрашиваем ИИ
+		print("GameController: Нет данных о локации, запрашиваем ИИ...")
+		_show_loading_screen("Мастер подземелий описывает место...")
+		pending_action = "entering_door"
+		var context_str = "Переход из: " + pending_previous_location + ". ID новой локации: " + target_id
+		var prompt = PromptTemplatesAuto.get_location_prompt_with_context(context_str)
+		ai_client.send_request([{"role": "user", "content": prompt}], {}, location_context, "location_text")
+	else:
+		# Старое поведение (если target_id не указан)
+		_show_loading_screen("Мастер подземелий описывает место...")
+		pending_action = "entering_door"
+		var context_str = "Переход из: " + pending_previous_location
+		var prompt = PromptTemplatesAuto.get_location_prompt_with_context(context_str)
+		ai_client.send_request([{"role": "user", "content": prompt}], {}, location_context, "location_text")
 func request_death_description(defender: String):
 	is_waiting_for_ai = true
 	game_message.emit("AI описывает гибель врага...")
@@ -928,13 +970,64 @@ func _request_story_intro(characters: Array):
 	pending_action = "story_intro"
 	ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "story")
 
+# game_controller.gd — ЗАМЕНИТЬ _on_story_received
 func _on_story_received(story_text: String):
-	# Сохраняем полученный текст как сюжетную завязку
 	story_intro = story_text.strip_edges()
 	print("Сюжетная завязка сохранена:\n", story_intro)
 	
-	# Сразу используем этот же текст для генерации локации
+	# Создаём CampaignManager, если ещё не создан
+	var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
+	if not campaign_mgr:
+		campaign_mgr = CampaignManager.new()
+		campaign_mgr.name = "CampaignManagerAuto"
+		get_tree().root.add_child(campaign_mgr)
+		campaign_mgr.initialize(ai_client)
+		campaign_mgr.campaign_loaded.connect(_on_campaign_structure_ready)
+		campaign_mgr.campaign_error.connect(_on_campaign_error)
+	
+	# Запрашиваем структуру кампании
+	_show_loading_screen("Мастер подземелий создаёт сюжет...")
+	
+	# Ищем персонажа (для передачи в промпт)
+	var player_char = _get_player_character()
+	if player_char:
+		campaign_mgr.request_campaign_structure(story_intro, player_char)
+	else:
+		# Fallback: если персонаж не найден, генерируем без него
+		campaign_mgr.request_campaign_structure(story_intro, CharacterData.new())
+
+func _get_player_character() -> CharacterData:
+	# Пытаемся загрузить персонажа из CharacterManager
+	var char_mgr = get_node_or_null("/root/CharacterManagerAuto")
+	if char_mgr and char_mgr.has_method("get_current_character"):
+		return char_mgr.get_current_character()
+	return null
+
+func _on_campaign_structure_ready(campaign_data: Dictionary):
+	print("GameController: Структура кампании получена!")
+	_hide_loading_screen()
+	
+	# Получаем стартовую локацию из структуры
+	var world = campaign_data.get("world_structure", {})
+	var start_loc = world.get("starting_location", {})
+	var start_loc_id = start_loc.get("id", "loc_start")
+	var start_loc_desc = start_loc.get("description", story_intro)
+	
+	# Используем get_or_create_location вместо generate_location
 	var location_manager = get_node("/root/LocationManagerAuto")
 	if location_manager:
-		var new_location = location_manager.generate_location(story_text, {})
+		location_manager.get_or_create_location(start_loc_id, start_loc_desc, {})
+		location_manager.current_location.description = start_loc_desc
+		game_message.emit(story_intro)
+		print("GameController: Стартовая локация создана: ", start_loc.get("name", "Неизвестно"))
+
+func _on_campaign_error(error: String):
+	print("GameController: Ошибка кампании — ", error)
+	_hide_loading_screen()
+	game_message.emit("⚠️ Ошибка генерации сюжета, создаю простую локацию...")
+	
+	# Fallback: старая логика
+	var location_manager = get_node("/root/LocationManagerAuto")
+	if location_manager:
+		var new_location = location_manager.generate_location(story_intro, {})
 		location_manager.set_current_location(new_location)
