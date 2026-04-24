@@ -78,6 +78,108 @@ func generate_location(description: String, additional_params: Dictionary = {}) 
 		print("LocationManager: Экран загрузки скрыт")
 	return location
 
+func get_or_create_location(location_id: String, description: String = "", additional_params: Dictionary = {}) -> LocationData:
+	print("LocationManager: get_or_create_location для ID: ", location_id)
+	
+	# 1. Пытаемся загрузить существующую локацию
+	var existing = load_location(location_id)
+	if existing:
+		print("LocationManager: Локация уже существует, загружаем: ", existing.name)
+		# Обновляем обратную дверь, если нужно
+		if additional_params.has("return_location_id") and additional_params["return_location_id"] != "":
+			_update_return_door(existing, additional_params)
+		set_current_location(existing, Vector2i(-1, -1))
+		return existing
+	
+	# 2. Проверяем структуру кампании
+	var campaign_mgr = _get_campaign_manager()
+	if campaign_mgr and campaign_mgr.has_campaign():
+		var loc_info = campaign_mgr.get_location_info(location_id)
+		if not loc_info.is_empty():
+			description = loc_info.get("description", description)
+			print("LocationManager: Используем описание из кампании для ", location_id)
+	
+	# 3. Если нет описания — запрашиваем у ИИ
+	if description.is_empty():
+		print("LocationManager: WARNING — нет описания для генерации локации ", location_id)
+		description = "Тёмное помещение с каменными стенами."
+	
+	# 4. Генерируем новую локацию
+	var params = LocationParser.parse_location_description(description)
+	params["id"] = location_id  # Принудительно задаём ID из структуры
+	
+	# Добавляем сюжетные двери из структуры мира
+	if campaign_mgr and campaign_mgr.has_campaign():
+		var next_locations = campaign_mgr.get_next_locations(location_id)
+		for next_id in next_locations:
+			var next_info = campaign_mgr.get_location_info(next_id)
+			if not next_info.is_empty():
+				var exit_data = {
+					"x": 14,  # Правая сторона карты
+					"y": 7,   # Центр
+					"description": next_info.get("connection_description", "Проход в " + next_info.get("name", "?")) if not next_info.is_empty() else "Проход",
+					"target_location_id": next_id
+				}
+				params["exits"].append(exit_data)
+				print("LocationManager: Добавлен сюжетный выход в ", next_id)
+	
+	# Добавляем обратный выход
+	if additional_params.has("return_location_id") and additional_params["return_location_id"] != "":
+		var return_door = {
+			"x": additional_params.get("return_door_x", 0),
+			"y": additional_params.get("return_door_y", 0),
+			"description": "Обратный проход в " + additional_params.get("previous_location", "предыдущую локацию"),
+			"target_location_id": additional_params["return_location_id"]
+		}
+		params["exits"].append(return_door)
+	
+	var location = LocationData.new()
+	location.id = location_id
+	location.name = params.get("location_name", "Неизвестная локация")
+	location.description = description
+	location.parent_location_id = params.get("parent_location_id", "")
+	location.door_id = params.get("door_id", "")
+	
+	var map_data = ProceduralMap.generate(params)
+	location.tiles = map_data.get("tiles", [])
+	location.heights = map_data.get("heights", [])
+	location.enemies = map_data.get("enemies", [])
+	location.npcs = map_data.get("npcs", [])
+	location.objects = map_data.get("objects", [])
+	location.exits = map_data.get("exits", [])
+	location.player_start_x = map_data.get("player_start", [8, 8])[0]
+	location.player_start_y = map_data.get("player_start", [8, 8])[1]
+	location.width = map_data.get("size", 16)
+	location.height = map_data.get("size", 16)
+	
+	locations[location_id] = location
+	location.save()
+	
+	set_current_location(location, Vector2i(-1, -1))
+	
+	print("LocationManager: Новая локация создана: ", location.name, " (ID: ", location_id, ")")
+	return location
+
+# Вспомогательный метод для обновления обратной двери
+func _update_return_door(location: LocationData, additional_params: Dictionary):
+	var parent_id = additional_params.get("return_location_id", "")
+	var door_x = additional_params.get("return_door_x", -1)
+	var door_y = additional_params.get("return_door_y", -1)
+	
+	var parent = load_location(parent_id)
+	if parent:
+		for exit_data in parent.exits:
+			if exit_data.get("x") == door_x and exit_data.get("y") == door_y:
+				exit_data["target_location_id"] = location.id
+				parent.save()
+				print("LocationManager: Обновлена дверь в ", parent_id)
+
+# Получение CampaignManager
+func _get_campaign_manager():
+	var root = Engine.get_main_loop().root
+	if root.has_node("CampaignManagerAuto"):
+		return root.get_node("CampaignManagerAuto")
+	return null
 func load_location(location_id: String) -> LocationData:
 	if locations.has(location_id):
 		return locations[location_id]
