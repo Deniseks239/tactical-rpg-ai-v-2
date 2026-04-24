@@ -19,20 +19,15 @@ static func parse_location_description(description: String) -> Dictionary:
 	
 	var lower_desc = description.to_lower()
 	
-	# 1. Определяем тип локации (новое!)
 	var location_info = _determine_location_type(lower_desc)
 	params["location_type"] = location_info["type"]
 	params["generator"] = location_info["generator"]
 	
-	# >>> ВРЕМЕННОЕ ИСПРАВЛЕНИЕ: Всегда используем генератор таверны <<<
-	# Игнорируем "city", пока он не готов
-	if params["location_type"] == "tavern":
-		# Спавним игрока напротив входной двери (внизу по центру)
-		var size = params.get("size", 8)
-		params["player_start"] = [size / 2, size - 2]
-		print("LocationParser: Для таверны игрок появится у входа на позиции ", params["player_start"])
+	if params["location_type"] == "city":
+		params["size"] = 48
+		params["width"] = 48
+		params["height"] = 48
 	
-	# 2. Парсим название
 	var name_match = _extract_name(description)
 	if name_match:
 		params["location_name"] = name_match
@@ -48,7 +43,7 @@ static func parse_location_description(description: String) -> Dictionary:
 		params["biome"] = "dungeon"  # таверна — это помещение
 	
 	# 4. Парсим врагов
-	var enemies_list = ["гоблин", "орк", "скелет", "паук", "крыса", "зомби"]
+	var enemies_list = ["гоблин", "орк", "скелет", "паук", "крыса", "зомби", "охотник", "воин"]
 	for enemy in enemies_list:
 		if enemy in lower_desc:
 			var count = _extract_number_before(lower_desc, enemy)
@@ -62,7 +57,6 @@ static func parse_location_description(description: String) -> Dictionary:
 	
 	# 6. Парсим выходы
 	if "дверь" in lower_desc or "выход" in lower_desc or "проход" in lower_desc or "троп" in lower_desc:
-		# Не добавляем выход для города — там своя логика
 		if params["location_type"] != "city":
 			params["exits"].append({"x": 7, "y": 4, "description": "Тускло освещённый проход"})
 	
@@ -73,15 +67,12 @@ static func parse_location_description(description: String) -> Dictionary:
 	
 	print("LocationParser: Извлечены параметры -> ", params)
 	
-	# Добавляем выход по умолчанию, если нет и не город
 	if params["exits"].is_empty() and params["location_type"] != "city":
 		var size = params.get("size", 8)
 		params["exits"].append({"x": size - 1, "y": size / 2, "description": "Тёмный проход"})
 		print("LocationParser: Добавлен выход по умолчанию")
 	
 	return params
-
-# Новая функция: определение типа локации по ключевым словам
 static func _determine_location_type(text: String) -> Dictionary:
 	if "город" in text or "столиц" in text or "посел" in text or "деревн" in text:
 		return {"type": "city", "generator": "city"}
