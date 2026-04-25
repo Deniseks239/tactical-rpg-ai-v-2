@@ -291,9 +291,7 @@ func _on_ai_response(response: Dictionary):
 			return
 		
 		# ===== ПРОВЕРЯЕМ СТРУКТУРИРОВАННУЮ КОМАНДУ =====
-		var regex = RegEx.new()
 		regex.compile("\\[([a-z]+):([a-zа-я]+):(\\d+)\\]")
-		var match = regex.search(text)
 		
 		if match:
 			var command = match.get_string(1)
