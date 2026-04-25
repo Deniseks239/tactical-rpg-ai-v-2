@@ -185,13 +185,12 @@ func _on_ai_response(response: Dictionary):
 	elif typ == "text":
 		var text = response["data"]
 		
-		# ПРОВЕРЯЕМ: это ответ на запрос структуры кампании?
-		# CampaignManager сам подключит свой обработчик
+		# ПРОВЕРЯЕМ: это ответ на запрос структуры кампании или story_intro
 		if pending_action == "story_intro":
 			_on_story_received(text)
 			return
 		
-		# ===== ПРОВЕРЯЕМ JSON ДЛЯ ГЕНЕРАЦИИ ЛОКАЦИИ =====
+		# ===== ПРОВЕРЯЕМ JSON ДЛЯ ГЕНЕРАЦИИ ЛОКАЦИИ (старый способ) =====
 		var json_start = text.find("{")
 		var json_end = text.rfind("}")
 		if json_start != -1 and json_end != -1 and json_end > json_start:
@@ -209,7 +208,7 @@ func _on_ai_response(response: Dictionary):
 						location_manager.set_current_location(new_location)
 						return
 		
-		# ===== ПРОВЕРЯЕМ СТРУКТУРИРОВАННУЮ КОМАНДУ =====
+		# ===== ПРОВЕРЯЕМ СТРУКТУРИРОВАННУЮ КОМАНДУ [команда:цель:число] =====
 		var regex = RegEx.new()
 		regex.compile("\\[([a-z]+):([a-zа-я]+):(\\d+)\\]")
 		var match = regex.search(text)
@@ -236,7 +235,6 @@ func _on_ai_response(response: Dictionary):
 			if location_manager and (location_manager.current_location == null or pending_action == "entering_door"):
 				print("Получено текстовое описание локации, передаём в LocationManager")
 		
-				# Подготавливаем параметры для обратной двери
 				var additional_params = {}
 				if pending_return_location_id != "":
 					additional_params = {
@@ -245,7 +243,6 @@ func _on_ai_response(response: Dictionary):
 						"return_door_y": pending_return_door_y,
 						"previous_location": pending_previous_location
 					}
-					# Сбрасываем после использования
 					pending_return_location_id = ""
 					pending_return_door_x = 0
 					pending_return_door_y = 0
@@ -253,7 +250,6 @@ func _on_ai_response(response: Dictionary):
 		
 				pending_action = ""
 				
-				# НОВОЕ: ищем target_location_id для связи с сюжетом
 				var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
 				var target_loc_id = ""
 				
@@ -277,7 +273,6 @@ func _on_ai_response(response: Dictionary):
 		
 		is_waiting_for_ai = false
 		
-		# ===== ПРОВЕРКА: после получения описания передаём ход врагам =====
 		if pending_action == "battle_summary":
 			print("Суммарное описание хода получено, передаём ход врагам")
 			pending_action = ""
@@ -285,86 +280,6 @@ func _on_ai_response(response: Dictionary):
 			_proceed_to_enemy_turn()
 			return
 		
-		if combat_state.action_points <= 0 and combat_state.get_all_enemies().size() > 0:
-			print("Очки действий закончились, передаём ход врагам")
-			_proceed_to_enemy_turn()
-			return
-		
-		# ===== ПРОВЕРЯЕМ СТРУКТУРИРОВАННУЮ КОМАНДУ =====
-		regex.compile("\\[([a-z]+):([a-zа-я]+):(\\d+)\\]")
-		
-		if match:
-			var command = match.get_string(1)
-			var target = match.get_string(2)
-			var value = int(match.get_string(3))
-			
-			print("Команда: ", command, ", цель: ", target, ", значение: ", value)
-			
-			match command:
-				"attack":
-					_perform_attack_by_name(target)
-				"move":
-					_perform_move_by_direction(target)
-				"examine":
-					game_message.emit("Осмотр: " + target)
-			return
-				# Текстовая генерация локации (использует структуру кампании)
-		if not text.begins_with("[") and not text.begins_with("{"):
-			var location_manager = get_node("/root/LocationManagerAuto")
-			if location_manager and (location_manager.current_location == null or pending_action == "entering_door"):
-				print("Получено текстовое описание локации, передаём в LocationManager")
-		
-				# Подготавливаем параметры для обратной двери
-				var additional_params = {}
-				if pending_return_location_id != "":
-					additional_params = {
-						"return_location_id": pending_return_location_id,
-						"return_door_x": pending_return_door_x,
-						"return_door_y": pending_return_door_y,
-						"previous_location": pending_previous_location
-					}
-					# Сбрасываем после использования
-					pending_return_location_id = ""
-					pending_return_door_x = 0
-					pending_return_door_y = 0
-					pending_previous_location = ""
-		
-				pending_action = ""
-				
-				# НОВОЕ: ищем target_location_id для связи с сюжетом
-				var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
-				var target_loc_id = ""
-				
-				if additional_params.has("return_location_id"):
-					target_loc_id = additional_params["return_location_id"]
-				elif campaign_mgr and campaign_mgr.has_campaign():
-					target_loc_id = "loc_" + str(text.hash())
-				
-				if target_loc_id != "":
-					location_manager.get_or_create_location(target_loc_id, text, {})
-				else:
-					var new_location = location_manager.generate_location(text, additional_params)
-					location_manager.set_current_location(new_location)
-				
-				return
-		
-		# ===== ОБЫЧНЫЙ ТЕКСТ =====
-		if text and not text.is_empty():
-			game_message.emit(text)
-			print("AI говорит: ", text)
-		
-		is_waiting_for_ai = false
-		
-		# ===== ПРОВЕРКА: после получения описания передаём ход врагам =====
-		# Если это был ответ на суммарное описание хода (battle_summary)
-		if pending_action == "battle_summary":
-			print("Суммарное описание хода получено, передаём ход врагам")
-			pending_action = ""
-			clear_events()
-			_proceed_to_enemy_turn()
-			return
-		
-		# Если очки действий закончились и есть враги, но описание не запрашивалось
 		if combat_state.action_points <= 0 and combat_state.get_all_enemies().size() > 0:
 			print("Очки действий закончились, передаём ход врагам")
 			_proceed_to_enemy_turn()
@@ -1067,7 +982,7 @@ func _request_story_intro(characters: Array):
 func _on_story_received(story_text: String):
 	story_intro = story_text.strip_edges()
 	print("Сюжетная завязка сохранена:\n", story_intro)
-	
+	pending_action = ""
 	# Создаём CampaignManager, если ещё не создан
 	var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
 	if not campaign_mgr:
