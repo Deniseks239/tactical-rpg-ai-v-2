@@ -31,7 +31,8 @@ func request_campaign_structure(story_intro: String, character: CharacterData):
 	
 	var prompt = _build_campaign_prompt(story_intro, character)
 	ai_client.model_name = "dnd-master-nothink"
-	ai_client.response_received.connect(_on_campaign_response)
+	# Уберите эту строку:
+	# ai_client.response_received.connect(_on_campaign_response)
 	ai_client.send_request(
 		[{"role": "user", "content": prompt}],
 		{}, 
