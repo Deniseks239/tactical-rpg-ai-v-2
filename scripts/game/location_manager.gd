@@ -85,6 +85,8 @@ func get_or_create_location(location_id: String, description: String = "", addit
 	var existing = load_location(location_id)
 	if existing:
 		print("LocationManager: Локация уже существует, загружаем: ", existing.name)
+		# Обновляем target_location_id из структуры кампании
+		_update_door_targets_from_campaign(existing)
 		# Обновляем обратную дверь, если нужно
 		if additional_params.has("return_location_id") and additional_params["return_location_id"] != "":
 			_update_return_door(existing, additional_params)
@@ -170,6 +172,7 @@ func get_or_create_location(location_id: String, description: String = "", addit
 				door_index += 1
 		# Пересохраняем локацию с обновлёнными дверьми
 		location.save()
+	_update_door_targets_from_campaign(location)
 	print("LocationManager: Новая локация создана: ", location.name, " (ID: ", location_id, ")")
 	return location
 
@@ -234,3 +237,27 @@ func _apply_location_to_game(location: LocationData, entry_door_pos: Vector2i = 
 			var npc_id = "npc_" + str(randi())
 			game_controller.grid_state.set_unit(npc_id, npc.name, "npc", npc.x, npc.y)
 			# NPC не добавляем в боевую систему
+# Добавьте этот метод в location_manager.gd
+func _update_door_targets_from_campaign(location: LocationData):
+	var campaign_mgr = _get_campaign_manager()
+	if not campaign_mgr or not campaign_mgr.has_campaign():
+		return
+	
+	var next_locs = campaign_mgr.get_next_locations(location.id)
+	if next_locs.is_empty():
+		return
+	
+	var door_index = 0
+	for exit_data in location.exits:
+		# Пропускаем двери, у которых уже есть target_location_id (обратные)
+		if exit_data.get("target_location_id", "") != "":
+			continue
+		if door_index < next_locs.size():
+			exit_data["target_location_id"] = next_locs[door_index]
+			door_index += 1
+			print("LocationManager: Назначен target_location_id=", next_locs[door_index-1], " для двери на ", exit_data.get("x"), ",", exit_data.get("y"))
+	
+	if door_index > 0:
+		location.save()
+		# Обновляем location.exits в текущем объекте
+		locations[location.id] = location
