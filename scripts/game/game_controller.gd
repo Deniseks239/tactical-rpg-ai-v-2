@@ -226,10 +226,7 @@ func _on_ai_response(response: Dictionary):
 				"examine":
 					game_message.emit("Осмотр: " + target)
 			return
-		
-		# Текстовая генерация локации (всегда, если нет текущей локации или мы входим в дверь)
-		# Текстовая генерация локации
-		# Текстовая генерация локации
+				# Текстовая генерация локации (использует структуру кампании)
 		if not text.begins_with("[") and not text.begins_with("{"):
 			var location_manager = get_node("/root/LocationManagerAuto")
 			if location_manager and (location_manager.current_location == null or pending_action == "entering_door"):
@@ -251,8 +248,22 @@ func _on_ai_response(response: Dictionary):
 					pending_previous_location = ""
 		
 				pending_action = ""
-				var new_location = location_manager.generate_location(text, additional_params)
-				location_manager.set_current_location(new_location)
+				
+				# НОВОЕ: ищем target_location_id для связи с сюжетом
+				var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
+				var target_loc_id = ""
+				
+				if additional_params.has("return_location_id"):
+					target_loc_id = additional_params["return_location_id"]
+				elif campaign_mgr and campaign_mgr.has_campaign():
+					target_loc_id = "loc_" + str(text.hash())
+				
+				if target_loc_id != "":
+					location_manager.get_or_create_location(target_loc_id, text, {})
+				else:
+					var new_location = location_manager.generate_location(text, additional_params)
+					location_manager.set_current_location(new_location)
+				
 				return
 		
 		# ===== ОБЫЧНЫЙ ТЕКСТ =====
