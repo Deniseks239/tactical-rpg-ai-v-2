@@ -240,110 +240,84 @@ func _create_grid():
 	# ===========================================
 
 func _on_cell_pressed(x: int, y: int):
-	# ===== ПРОВЕРКА НА ДВЕРЬ (ИСПРАВЛЕНО) =====
+	# Проверка на дверь
 	var door_key = str(x) + "_" + str(y)
 	if "doors" in grid_state and grid_state.doors.has(door_key):
 		var door = grid_state.doors[door_key]
 		print("Клик по двери на клетке ", x, ",", y)
-	
-		# Проверяем, стоит ли игрок на этой клетке
 		var player_pos = grid_state.get_unit_position("player_1")
 		if player_pos.x == x and player_pos.y == y:
-			# Игрок стоит на двери — входим
 			_enter_door({
-				"x": x,
-				"y": y,
+				"x": x, "y": y,
 				"description": door.description,
 				"target_location_id": door.target_location_id,
 				"target_door_id": door.target_door_id
 			})
 		else:
-			# Игрок не на двери — пытаемся переместиться
 			if selected_unit_id != "":
 				_try_move_unit(selected_unit_id, x, y)
 			else:
 				game_controller.game_message.emit("Выберите персонажа для перемещения")
 		return
-# =============================================
 	
 	var pos_key = str(x) + "_" + str(y)
 	
 	if game_controller.is_waiting_for_ai:
-		print("Ожидание ответа AI, действия временно заблокированы")
 		game_controller.game_message.emit("Подождите, AI описывает происходящее...")
 		return
 	
 	if game_controller.game_over:
-		print("Игра окончена")
-		return
-	
-	if not combat_state:
-		print("Ошибка: combat_state не инициализирован")
 		return
 	
 	var unit_on_cell = grid_state.units.get(pos_key)
-	print("DEBUG: selected_unit_id = ", selected_unit_id)
-	print("DEBUG: unit_on_cell = ", unit_on_cell)
-	print("DEBUG: combat_state.action_points = ", combat_state.action_points)
+	var tile_type = grid_state.tiles[x][y]["type"]
+	var player_pos = grid_state.get_unit_position("player_1")
+	var distance_to_player = abs(player_pos.x - x) + abs(player_pos.y - y)
+	var is_adjacent = (distance_to_player <= 1)
 	
-	# Если выбран игрок
+	# Если выбран игрок — показываем контекстное меню
 	if selected_unit_id != "":
-		# Если кликнули на самого себя
-		if unit_on_cell and unit_on_cell["type"] == "player" and unit_on_cell["id"] == selected_unit_id:
-			# Проверяем, не стоит ли игрок на клетке с дверью (старая логика)
-			var location_manager = get_node("/root/LocationManagerAuto")
-			var is_on_door = false
-			var door_exit = null
-			if location_manager and location_manager.current_location:
-				for exit_data in location_manager.current_location.exits:
-					if exit_data.x == x and exit_data.y == y:
-						is_on_door = true
-						door_exit = exit_data
-						break
-			
-			if is_on_door:
-				print("Игрок стоит на двери, вход")
-				_enter_door(door_exit)
-				return
-			else:
-				print("Клик по самому себе, ничего не делаем")
-				_update_highlight()
-				return
-		
-		# Если на клетке враг — атакуем
-		if unit_on_cell and unit_on_cell["type"] == "enemy":
-			print("Попытка атаковать врага: ", unit_on_cell["name"])
-			_attack(selected_unit_id, unit_on_cell["id"])
+		# Клик на самого себя — показываем меню для клетки под игроком
+		if unit_on_cell and unit_on_cell["id"] == selected_unit_id:
+			_show_context_menu(x, y, unit_on_cell, tile_type, true)
 			return
 		
-		# Пытаемся переместиться на целевую клетку
+		# Клик на врага — показываем меню
+		if unit_on_cell and unit_on_cell["type"] == "enemy":
+			_show_context_menu(x, y, unit_on_cell, tile_type, false)
+			return
+		
+		# Клик на NPC — показываем меню
+		if unit_on_cell and unit_on_cell["type"] == "npc":
+			_show_context_menu(x, y, unit_on_cell, tile_type, false)
+			return
+		
+		# Клик на объект (стол, бочка, сундук) — показываем меню взаимодействия
+		if _is_interactive_object(tile_type) and is_adjacent:
+			_show_context_menu(x, y, null, tile_type, false)
+			return
+		
+		# Клик на пустую клетку — перемещение
 		_try_move_unit(selected_unit_id, x, y)
 		return
 	
-	# Если игрок не выбран, пытаемся выбрать юнита
+	# Если игрок не выбран — пытаемся выбрать
 	if unit_on_cell and unit_on_cell["type"] == "player":
 		selected_unit_id = unit_on_cell["id"]
 		_update_highlight()
 		game_controller.game_message.emit("Выбран " + unit_on_cell["name"])
-		print("Выбран игрок: ", selected_unit_id)
 		return
 	
-	# Если нет юнита, проверяем дверь (старая логика)
+	# Старая логика для дверей
 	var location_manager = get_node("/root/LocationManagerAuto")
 	if location_manager and location_manager.current_location:
 		for exit_data in location_manager.current_location.exits:
 			if exit_data.x == x and exit_data.y == y:
-				# Проверяем, стоит ли игрок рядом с дверью
-				var player_pos = grid_state.get_unit_position("player_1")
-				var distance_to_door = abs(player_pos.x - x) + abs(player_pos.y - y)
-				if distance_to_door <= 1:
-					print("Вход в дверь")
+				if is_adjacent:
 					_enter_door(exit_data)
 				else:
 					game_controller.game_message.emit("Нужно подойти ближе к двери")
 				return
-	
-	print("На клетке ", x, ",", y, " нет юнита и не дверь")
 func _move_unit_free(unit_id: String, target_x: int, target_y: int):
 	var start_pos = grid_state.get_unit_position(unit_id)
 	if start_pos.x == -1:
@@ -724,3 +698,128 @@ func _find_free_adjacent_cell(x: int, y: int) -> Vector2i:
 	# Если все соседние заняты – возвращаем исходную позицию (на худой конец)
 	printerr("Не найдено свободной клетки рядом с дверью! Ставим дверь поверх.")
 	return Vector2i(x, y)
+func _show_context_menu(grid_x: int, grid_y: int, unit_data: Variant, tile_type, is_self: bool):
+	print("Показываем контекстное меню для клетки ", grid_x, ",", grid_y)
+	
+	# Удаляем предыдущее меню, если есть
+	_remove_context_menu()
+	
+	# Создаём всплывающее меню
+	var menu = PopupMenu.new()
+	menu.name = "ContextMenu"
+	add_child(menu)
+	
+	if unit_data and unit_data["type"] == "enemy":
+		menu.add_item("⚔️ Атаковать", 0)
+		menu.add_item("💬 Говорить", 1)
+		menu.add_item("👁️ Осмотреть", 2)
+	elif unit_data and unit_data["type"] == "npc":
+		menu.add_item("💬 Говорить", 1)
+		menu.add_item("👁️ Осмотреть", 2)
+	elif _is_interactive_object(tile_type):
+		menu.add_item("🤚 Взаимодействовать", 3)
+		menu.add_item("👁️ Осмотреть", 2)
+	elif is_self:
+		# Клик на самого себя — осмотреть клетку под собой
+		menu.add_item("👁️ Осмотреть", 2)
+	else:
+		# Пустая клетка
+		menu.add_item("👁️ Осмотреть", 2)
+	
+	# Позиционируем меню над клеткой
+	var cell_pos = Vector2(grid_x * grid_state.cell_size, grid_y * grid_state.cell_size)
+	var global_pos = to_global(cell_pos)
+	menu.position = get_viewport().get_camera_2d().global_position + (global_pos - get_viewport().get_camera_2d().global_position) * scale - Vector2(0, 70)
+	menu.popup()
+	
+	# Подключаем выбор пункта меню
+	menu.id_pressed.connect(_on_context_menu_selected.bind(grid_x, grid_y, unit_data, tile_type))
+
+func _on_context_menu_selected(id: int, grid_x: int, grid_y: int, unit_data, tile_type):
+	match id:
+		0:  # Атаковать
+			if unit_data and unit_data["type"] == "enemy":
+				_attack(selected_unit_id, unit_data["id"])
+		1:  # Говорить
+			if unit_data:
+				_talk_to_unit(unit_data)
+		2:  # Осмотреть
+			_examine_cell(grid_x, grid_y, tile_type, unit_data)
+		3:  # Взаимодействовать
+			_interact_with_object(grid_x, grid_y, tile_type)
+	
+	_remove_context_menu()
+	_update_highlight()
+
+func _talk_to_unit(unit_data: Dictionary):
+	var unit_name = unit_data.get("name", "Неизвестный")
+	print("Попытка поговорить с ", unit_name)
+	
+	# Если это NPC — пробуем найти его в структуре кампании
+	var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
+	if campaign_mgr and campaign_mgr.has_campaign():
+		var npc_id = campaign_mgr.get_npc_by_name(unit_name)
+		if npc_id:
+			print("Найден NPC в кампании: ", npc_id)
+			game_controller.game_message.emit("Вы обращаетесь к " + unit_name + "...")
+			# TODO: открыть диалоговое окно
+			return
+	
+	# Если это враг
+	if unit_data.get("type") == "enemy":
+		game_controller.game_message.emit(unit_name + " рычит в ответ. Он не настроен на разговор.")
+	else:
+		game_controller.game_message.emit(unit_name + " не отвечает.")
+
+func _examine_cell(x: int, y: int, tile_type, unit_data):
+	var description = "Вы осматриваетесь... "
+	
+	# Описываем клетку
+	match tile_type:
+		GridState.TileType.TABLE:
+			description += "Это старый деревянный стол."
+		GridState.TileType.WALL:
+			description += "Грубая каменная стена."
+		GridState.TileType.GRASS:
+			description += "Мягкая трава под ногами."
+		_:
+			description += "Ничего примечательного."
+	
+	# Если на клетке кто-то есть
+	if unit_data:
+		var unit_info = combat_state.units.get(unit_data["id"], {})
+		description += " Здесь находится " + unit_data["name"]
+		if unit_info.has("hp"):
+			description += " (HP: " + str(unit_info["hp"]) + "/" + str(unit_info.get("max_hp", "?")) + ")"
+		description += "."
+	
+	game_controller.game_message.emit(description)
+
+func _interact_with_object(x: int, y: int, tile_type):
+	print("Взаимодействие с объектом на ", x, ",", y)
+	
+	match tile_type:
+		GridState.TileType.TABLE:
+			game_controller.game_message.emit("Вы осматриваете стол. Ничего интересного.")
+		GridState.TileType.SHOP_COUNTER:
+			game_controller.game_message.emit("За прилавком никого нет.")
+		_:
+			game_controller.game_message.emit("Вы не можете взаимодействовать с этим.")
+
+func _is_interactive_object(tile_type) -> bool:
+	match tile_type:
+		GridState.TileType.TABLE, \
+		GridState.TileType.CHAIR, \
+		GridState.TileType.SHOP_COUNTER, \
+		GridState.TileType.TAVERN_BAR, \
+		GridState.TileType.FORGE, \
+		GridState.TileType.FOUNTAIN, \
+		GridState.TileType.STATUE:
+			return true
+		_:
+			return false
+
+func _remove_context_menu():
+	var menu = get_node_or_null("ContextMenu")
+	if menu:
+		menu.queue_free()
