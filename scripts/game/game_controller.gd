@@ -268,8 +268,10 @@ func _on_ai_response(response: Dictionary):
 		
 		# ===== ОБЫЧНЫЙ ТЕКСТ =====
 		if text and not text.is_empty():
-			game_message.emit(text)
-			print("AI говорит: ", text)
+			# НЕ показываем JSON игроку
+			if not text.begins_with("{") and not text.begins_with("["):
+				game_message.emit(text)
+				print("AI говорит: ", text)
 		
 		is_waiting_for_ai = false
 		
