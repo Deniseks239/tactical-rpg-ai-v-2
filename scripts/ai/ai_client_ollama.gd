@@ -81,9 +81,9 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 		num_predict = 150
 		ctx_size = 1024
 	elif request_type == "story":
-		num_predict = 1000
-		ctx_size = 2048
-		temperature = 0.7
+		num_predict = 2000
+		ctx_size = 4096
+		temperature = 0.3
 	# =========================================
 	
 	var body = {
