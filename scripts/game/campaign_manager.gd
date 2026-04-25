@@ -12,6 +12,7 @@ const SAVE_PATH = "user://campaign_state.json"
 var ai_client: AIClientOllama
 var campaign_data: Dictionary = {}
 var current_dialogue_npc: Dictionary = {}
+var is_waiting_for_structure: bool = false
 
 func _ready():
 	# ai_client будет установлен из GameController
@@ -26,10 +27,11 @@ func initialize(p_ai_client: AIClientOllama):
 
 func request_campaign_structure(story_intro: String, character: CharacterData):
 	print("CampaignManager: запрос структуры кампании...")
+	is_waiting_for_structure = true
 	
 	var prompt = _build_campaign_prompt(story_intro, character)
 	ai_client.model_name = "dnd-master-nothink"
-	# Используем стандартный метод, но с типом "story" для длинного контекста
+	ai_client.response_received.connect(_on_campaign_response)
 	ai_client.send_request(
 		[{"role": "user", "content": prompt}],
 		{}, 
@@ -41,16 +43,25 @@ func _build_campaign_prompt(story_intro: String, character: CharacterData) -> St
 	return PromptTemplates.get_campaign_structure_prompt(story_intro, character.character_name)
 
 func _on_campaign_response(response: Dictionary):
+	if not is_waiting_for_structure:
+		return  # Не наш ответ — пропускаем
+	
 	if response.get("type") != "text":
 		return
 	
 	var text = response["data"]
 	print("CampaignManager: получен ответ от ИИ (длина: ", text.length(), " символов)")
 	
-	# Пытаемся извлечь JSON
+	# Извлекаем JSON
 	var json_str = _extract_json(text)
 	if json_str.is_empty():
-		campaign_error.emit("Не удалось извлечь JSON из ответа ИИ")
+		# Пробуем исправить обрезанный JSON
+		json_str = _fix_truncated_json(text)
+	
+	if json_str.is_empty():
+		print("CampaignManager: не удалось извлечь JSON, повторяем запрос...")
+		is_waiting_for_structure = false
+		campaign_error.emit("JSON повреждён, пробую ещё раз...")
 		return
 	
 	var json = JSON.new()
@@ -58,14 +69,15 @@ func _on_campaign_response(response: Dictionary):
 	
 	if parse_result is Dictionary:
 		campaign_data = parse_result
+		is_waiting_for_structure = false
+		ai_client.response_received.disconnect(_on_campaign_response)
 		_save_campaign()
 		print("CampaignManager: кампания создана — ", campaign_data.get("campaign_name", "Без названия"))
-		
-		# Отключаем слушатель, чтобы не мешать другим запросам
-		ai_client.response_received.disconnect(_on_campaign_response)
-		
 		campaign_loaded.emit(campaign_data)
 	else:
+		print("CampaignManager: JSON повреждён, ошибка: ", json.get_error_message())
+		is_waiting_for_structure = false
+		ai_client.response_received.disconnect(_on_campaign_response)
 		campaign_error.emit("JSON повреждён: " + json.get_error_message())
 
 func _extract_json(text: String) -> String:
@@ -243,3 +255,38 @@ func load_campaign() -> bool:
 
 func has_campaign() -> bool:
 	return not campaign_data.is_empty()
+func _fix_truncated_json(text: String) -> String:
+	# Ищем последнюю запятую или кавычку и обрезаем до последнего валидного токена
+	var json_start = text.find("{")
+	if json_start == -1:
+		return ""
+	
+	# Удаляем всё после последней валидной конструкции
+	var result = text.substr(json_start)
+	
+	# Если есть незакрытые кавычки — закрываем
+	var quote_count = result.count('"')
+	if quote_count % 2 != 0:
+		# Нечётное количество кавычек — обрезаем до последней чётной
+		var last_even_quote = -1
+		var count = 0
+		for i in range(result.length()):
+			if result[i] == '"' and (i == 0 or result[i-1] != '\\'):
+				count += 1
+				if count % 2 == 0:
+					last_even_quote = i
+		if last_even_quote != -1:
+			result = result.substr(0, last_even_quote + 1)
+	
+	# Закрываем скобки
+	var open_braces = result.count('{') - result.count('}')
+	var open_brackets = result.count('[') - result.count(']')
+	
+	while open_braces > 0:
+		result += "}"
+		open_braces -= 1
+	while open_brackets > 0:
+		result += "]"
+		open_brackets -= 1
+	
+	return result
