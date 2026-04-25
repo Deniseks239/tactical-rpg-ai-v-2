@@ -157,6 +157,19 @@ func get_or_create_location(location_id: String, description: String = "", addit
 	
 	set_current_location(location, Vector2i(-1, -1))
 	
+	if campaign_mgr and campaign_mgr.has_campaign():
+		var next_locs = campaign_mgr.get_next_locations(location_id)
+		var door_index = 0
+		for exit_data in location.exits:
+			# Пропускаем обратную дверь (она уже имеет target_location_id)
+			if exit_data.get("target_location_id", "") != "":
+				continue
+			# Назначаем следующую локацию из структуры
+			if door_index < next_locs.size():
+				exit_data["target_location_id"] = next_locs[door_index]
+				door_index += 1
+		# Пересохраняем локацию с обновлёнными дверьми
+		location.save()
 	print("LocationManager: Новая локация создана: ", location.name, " (ID: ", location_id, ")")
 	return location
 
