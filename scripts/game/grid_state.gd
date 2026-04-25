@@ -44,8 +44,20 @@ func initialize():
 func is_walkable(x: int, y: int, unit_id: String = "") -> bool:
 	if x < 0 or x >= width or y < 0 or y >= height:
 		return false
-	if tiles[x][y]["type"] == TileType.WALL:
-		return false
+	
+	var tile_type = tiles[x][y]["type"]
+	
+	# Непроходимые типы тайлов
+	match tile_type:
+		TileType.WALL, TileType.TABLE, TileType.CHAIR, TileType.SHOP_COUNTER, \
+		TileType.TAVERN_BAR, TileType.FORGE, TileType.HOUSE_WALL, \
+		TileType.CASTLE_WALL, TileType.FOUNTAIN, TileType.STATUE:
+			return false
+	
+	# Проверка на двери дома — они проходимы
+	if tile_type == TileType.HOUSE_DOOR or tile_type == TileType.CASTLE_GATE:
+		pass  # проходимы
+	
 	var pos_key = str(x) + "_" + str(y)
 	if units.has(pos_key) and units[pos_key]["id"] != unit_id:
 		return false
