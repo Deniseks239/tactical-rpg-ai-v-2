@@ -52,45 +52,45 @@ static func get_campaign_structure_prompt(story_intro: String, character_name: S
 {
   "campaign_name": "название кампании",
   "main_quest": {
-    "title": "название главного квеста",
-    "description": "краткое описание",
-    "stages": [
-      {"id": "stage_1", "description": "что нужно сделать", "location_hint": "где это может быть"},
-      {"id": "stage_2", "description": "следующий этап", "location_hint": "где искать"}
+	"title": "название главного квеста",
+	"description": "краткое описание",
+	"stages": [
+	  {"id": "stage_1", "description": "что нужно сделать", "location_hint": "где это может быть"},
+	  {"id": "stage_2", "description": "следующий этап", "location_hint": "где искать"}
     ]
   },
   "npcs": [
     {
-      "id": "npc_1",
-      "name": "имя NPC",
-      "role": "торговец/трактирщик/стражник/маг",
-      "personality": "характер (1-2 фразы)",
-      "location": "где находится",
-      "knowledge": ["что знает 1", "что знает 2"],
-      "quests": [
+	  "id": "npc_1",
+	  "name": "имя NPC",
+	  "role": "торговец/трактирщик/стражник/маг",
+	  "personality": "характер (1-2 фразы)",
+	  "location": "где находится",
+	  "knowledge": ["что знает 1", "что знает 2"],
+	  "quests": [
         {
-          "title": "название побочного квеста",
-          "description": "что нужно сделать",
-          "reward": "награда"
+		  "title": "название побочного квеста",
+		  "description": "что нужно сделать",
+		  "reward": "награда"
         }
       ]
     }
   ],
   "world_structure": {
-    "starting_location": {
-      "id": "loc_tavern",
-      "name": "название стартовой локации",
-      "description": "краткое описание для генерации",
-      "biome": "tavern/forest/dungeon/cave"
+	"starting_location": {
+	  "id": "loc_tavern",
+	  "name": "название стартовой локации",
+	  "description": "краткое описание для генерации",
+	  "biome": "tavern/forest/dungeon/cave"
     },
-    "connected_locations": [
+	"connected_locations": [
       {
-        "id": "loc_cellar",
-        "name": "название",
-        "description": "описание",
-        "biome": "dungeon",
-        "connected_from": "loc_tavern",
-        "connection_description": "дверь в подвал"
+		"id": "loc_cellar",
+		"name": "название",
+		"description": "описание",
+		"biome": "dungeon",
+		"connected_from": "loc_tavern",
+		"connection_description": "дверь в подвал"
       }
     ]
   }
