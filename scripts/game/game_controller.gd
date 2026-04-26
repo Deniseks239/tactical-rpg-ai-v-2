@@ -6,7 +6,7 @@ signal game_message(text: String)
 var grid_state: GridState
 var combat_state: CombatState
 var game_state: GameState
-var ai_client: AIClientOllama
+var ai_client: AIClientNobodyWho
 var is_waiting_for_ai: bool = false
 var pending_action: String = ""
 var game_over: bool = false
@@ -43,7 +43,7 @@ func _ready():
 	combat_state.current_turn_index = 0
 	
 	# AI клиент
-	ai_client = AIClientOllama.new()
+	ai_client = AIClientNobodyWho.new()
 	add_child(ai_client)
 	ai_client.model_name = "dnd-master-nothink"
 	ai_client.response_received.connect(_on_ai_response)
