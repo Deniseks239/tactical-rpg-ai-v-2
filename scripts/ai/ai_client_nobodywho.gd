@@ -10,7 +10,7 @@ var master_chat: NobodyWhoChat   # Генерация кампании, стру
 var npc_chat: NobodyWhoChat      # Диалоги с NPC
 var battle_chat: NobodyWhoChat   # Описания боя, атак, смертей
 
-var model_name: String = "gemma-4-e2b-q4_k_m"  # Имя файла модели без .gguf
+var model_name: String = "game_master"  # Имя файла модели без .gguf
 var PromptTemplates = preload("res://scripts/ai/prompt_templates.gd")
 
 # Системные промпты для каждого чата
@@ -197,7 +197,7 @@ func cancel_current_request():
 
 func set_npc_context(npc_name: String, npc_role: String, npc_knowledge: Array):
 	if npc_chat:
-		var prompt = "Ты — %s, %s. ".form([npc_name, npc_role])
-		prompt += "Ты знаешь: %s. ".form([str(npc_knowledge)])
+		var prompt = "Ты — " + npc_name + ", " + npc_role + ". "
+		prompt += "Ты знаешь: " + str(npc_knowledge) + ". "
 		prompt += "Отвечай от лица персонажа, кратко, 1-3 предложения."
 		npc_chat.system_prompt = prompt
