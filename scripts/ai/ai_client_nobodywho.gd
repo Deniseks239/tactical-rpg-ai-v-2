@@ -34,8 +34,19 @@ func _ready():
 		print("AIClientNobodyWho: NobodyWhoModel не найден — создаю")
 		model = NobodyWhoModel.new()
 		model.name = "NobodyWhoModel"
-		model.model_file = "res://models/" + model_name + ".gguf"
 		add_child(model)
+	
+	# В NobodyWho путь к модели задаётся через свойство model_path или file_path
+	# Пробуем разные варианты имени свойства
+	if model.has_method("set_model_file"):
+		model.model_file = "res://models/" + model_name + ".gguf"
+	elif "model_path" in model:
+		model.model_path = "res://models/" + model_name + ".gguf"
+	elif "file_path" in model:
+		model.file_path = "res://models/" + model_name + ".gguf"
+	else:
+		# Если ничего не подошло — путь уже задан в инспекторе
+		print("AIClientNobodyWho: путь к модели не задан программно, проверьте инспектор")
 	
 	# Создаём три чата, подключенные к одной модели
 	_setup_chat("MasterChat", model, SYSTEM_PROMPT_MASTER)
@@ -49,7 +60,7 @@ func _setup_chat(chat_name: String, model: NobodyWhoModel, system_prompt: String
 	if not chat:
 		chat = NobodyWhoChat.new()
 		chat.name = chat_name
-		chat.model = model
+		# Связь с моделью настроим в редакторе
 		add_child(chat)
 	
 	chat.system_prompt = system_prompt
@@ -64,8 +75,6 @@ func _setup_chat(chat_name: String, model: NobodyWhoModel, system_prompt: String
 		"BattleChat":
 			battle_chat = chat
 			battle_chat.response_finished.connect(_on_battle_response)
-
-# === ГЛАВНЫЙ МЕТОД ОТПРАВКИ (тот же интерфейс что и Ollama) ===
 
 func send_request(messages: Array, game_context: Dictionary, additional_context: Dictionary = {}, request_type: String = "default"):
 	print("AIClientNobodyWho: send_request вызван с типом ", request_type)
