@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://b3ekhpjfwp1re"]
+
+[node name="AIManager" type="Node" unique_id=792596334]
+
+[node name="NobodyWhoModel" type="NobodyWhoModel" parent="." unique_id=1952487486]
+
+[node name="MasterChat" type="NobodyWhoChat" parent="." unique_id=459243216]
+
+[node name="NPCChat" type="NobodyWhoChat" parent="." unique_id=1029255886]
+
+[node name="BattleChat" type="NobodyWhoChat" parent="." unique_id=814910072]
