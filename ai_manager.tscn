@@ -4,8 +4,11 @@
 
 [node name="NobodyWhoModel" type="NobodyWhoModel" parent="." unique_id=1952487486]
 
-[node name="MasterChat" type="NobodyWhoChat" parent="." unique_id=459243216]
+[node name="MasterChat" type="NobodyWhoChat" parent="." unique_id=459243216 node_paths=PackedStringArray("model_node")]
+model_node = NodePath("../NobodyWhoModel")
 
-[node name="NPCChat" type="NobodyWhoChat" parent="." unique_id=1029255886]
+[node name="NPCChat" type="NobodyWhoChat" parent="." unique_id=1029255886 node_paths=PackedStringArray("model_node")]
+model_node = NodePath("../NobodyWhoModel")
 
-[node name="BattleChat" type="NobodyWhoChat" parent="." unique_id=814910072]
+[node name="BattleChat" type="NobodyWhoChat" parent="." unique_id=814910072 node_paths=PackedStringArray("model_node")]
+model_node = NodePath("../NobodyWhoModel")
