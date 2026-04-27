@@ -3,6 +3,7 @@
 [node name="AIManager" type="Node" unique_id=792596334]
 
 [node name="NobodyWhoModel" type="NobodyWhoModel" parent="." unique_id=1952487486]
+model_path = "res://models/game_master.gguf"
 
 [node name="MasterChat" type="NobodyWhoChat" parent="." unique_id=459243216 node_paths=PackedStringArray("model_node")]
 model_node = NodePath("../NobodyWhoModel")
