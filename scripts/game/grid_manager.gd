@@ -246,18 +246,15 @@ func _on_cell_pressed(x: int, y: int):
 		var door = grid_state.doors[door_key]
 		print("Клик по двери на клетке ", x, ",", y)
 		var player_pos = grid_state.get_unit_position("player_1")
-		if player_pos.x == x and player_pos.y == y:
-			_enter_door({
-				"x": x, "y": y,
-				"description": door.description,
-				"target_location_id": door.target_location_id,
-				"target_door_id": door.target_door_id
-			})
+		# Если игрок стоит на двери и она выбрана - показываем контекстное меню
+		if player_pos.x == x and player_pos.y == y and selected_unit_id != "":
+			_show_context_menu(x, y, null, grid_state.tiles[x][y]["type"], false, true)
+			return
+			# Если игрок не на двери - перемещаемся
+		if selected_unit_id != "":
+			_try_move_unit(selected_unit_id, x, y)
 		else:
-			if selected_unit_id != "":
-				_try_move_unit(selected_unit_id, x, y)
-			else:
-				game_controller.game_message.emit("Выберите персонажа для перемещения")
+			game_controller.game_message.emit("Выберите персонажа для перемещения")
 		return
 	
 	var pos_key = str(x) + "_" + str(y)
@@ -699,7 +696,7 @@ func _find_free_adjacent_cell(x: int, y: int) -> Vector2i:
 	# Если все соседние заняты – возвращаем исходную позицию (на худой конец)
 	printerr("Не найдено свободной клетки рядом с дверью! Ставим дверь поверх.")
 	return Vector2i(x, y)
-func _show_context_menu(grid_x: int, grid_y: int, unit_data: Variant, tile_type, is_self: bool):
+func _show_context_menu(grid_x: int, grid_y: int, unit_data: Variant, tile_type, is_self: bool, is_door: bool = false):
 	print("Показываем контекстное меню для клетки ", grid_x, ",", grid_y)
 	
 	# Удаляем предыдущее меню, если есть
@@ -710,7 +707,10 @@ func _show_context_menu(grid_x: int, grid_y: int, unit_data: Variant, tile_type,
 	menu.name = "ContextMenu"
 	add_child(menu)
 	
-	if unit_data and unit_data["type"] == "enemy":
+	if is_door:
+		menu.add_item("🚪 Войти", 4)
+		menu.add_item("👁️ Осмотреть", 2)
+	elif unit_data and unit_data["type"] == "enemy":
 		menu.add_item("⚔️ Атаковать", 0)
 		menu.add_item("💬 Говорить", 1)
 		menu.add_item("👁️ Осмотреть", 2)
@@ -721,10 +721,8 @@ func _show_context_menu(grid_x: int, grid_y: int, unit_data: Variant, tile_type,
 		menu.add_item("🤚 Взаимодействовать", 3)
 		menu.add_item("👁️ Осмотреть", 2)
 	elif is_self:
-		# Клик на самого себя — осмотреть клетку под собой
 		menu.add_item("👁️ Осмотреть", 2)
 	else:
-		# Пустая клетка
 		menu.add_item("👁️ Осмотреть", 2)
 	
 	# Позиционируем меню над клеткой
@@ -735,7 +733,6 @@ func _show_context_menu(grid_x: int, grid_y: int, unit_data: Variant, tile_type,
 	
 	# Подключаем выбор пункта меню
 	menu.id_pressed.connect(_on_context_menu_selected.bind(grid_x, grid_y, unit_data, tile_type))
-
 func _on_context_menu_selected(id: int, grid_x: int, grid_y: int, unit_data, tile_type):
 	match id:
 		0:  # Атаковать
@@ -748,6 +745,16 @@ func _on_context_menu_selected(id: int, grid_x: int, grid_y: int, unit_data, til
 			_examine_cell(grid_x, grid_y, tile_type, unit_data)
 		3:  # Взаимодействовать
 			_interact_with_object(grid_x, grid_y, tile_type)
+		4:  # Войти в дверь
+			var door_key = str(grid_x) + "_" + str(grid_y)
+			if "doors" in grid_state and grid_state.doors.has(door_key):
+				var door = grid_state.doors[door_key]
+				_enter_door({
+					"x": grid_x, "y": grid_y,
+					"description": door.description,
+					"target_location_id": door.target_location_id,
+					"target_door_id": door.target_door_id
+				})
 	
 	_remove_context_menu()
 	_update_highlight()
