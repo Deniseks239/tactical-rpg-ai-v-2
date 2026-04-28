@@ -9,7 +9,7 @@ signal quest_updated(quest_id: String, stage: int)
 
 const SAVE_PATH = "user://campaign_state.json"
 
-var ai_client: AIClientOllama
+var ai_client: Node
 var campaign_data: Dictionary = {}
 var current_dialogue_npc: Dictionary = {}
 var is_waiting_for_structure: bool = false
@@ -18,7 +18,7 @@ func _ready():
 	# ai_client будет установлен из GameController
 	pass
 
-func initialize(p_ai_client: AIClientOllama):
+func initialize(p_ai_client: Node):
 	ai_client = p_ai_client
 	ai_client.response_received.connect(_on_campaign_response)
 	print("CampaignManager: инициализирован")
