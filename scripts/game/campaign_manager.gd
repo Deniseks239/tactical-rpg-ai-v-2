@@ -67,19 +67,14 @@ func _on_campaign_response(response: Dictionary):
 	
 	var json = JSON.new()
 	var parse_result = json.parse_string(json_str)
-	
+	if parse_result == null:
+		# JSON повреждён — пробуем исправить
+		var fixed = _fix_truncated_json(text)
+		if fixed != json_str:
+			print("CampaignManager: JSON повреждён, попытка исправления...").parse_result = json.parse_string(fixed)
 	if parse_result is Dictionary:
 		campaign_data = parse_result
-		is_waiting_for_structure = false
-		ai_client.response_received.disconnect(_on_campaign_response)
-		_save_campaign()
-		print("CampaignManager: кампания создана — ", campaign_data.get("campaign_name", "Без названия"))
-		campaign_loaded.emit(campaign_data)
-	else:
-		print("CampaignManager: JSON повреждён, ошибка: ", json.get_error_message())
-		is_waiting_for_structure = false
-		ai_client.response_received.disconnect(_on_campaign_response)
-		campaign_error.emit("JSON повреждён: " + json.get_error_message())
+		...
 
 func _extract_json(text: String) -> String:
 	# Ищем от ```json до ```
