@@ -47,7 +47,8 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 		"messages": full_messages,
 		"max_tokens": max_tokens,
 		"temperature": temperature,
-		"stream": false
+		"stream": false,
+		"enable_thinking": false
 	}
 	
 	var json_body = JSON.stringify(body)
