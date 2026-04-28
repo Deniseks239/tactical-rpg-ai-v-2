@@ -149,33 +149,44 @@ func get_or_create_location(location_id: String, description: String = "", addit
 	location.enemies = map_data.get("enemies", [])
 	location.npcs = map_data.get("npcs", [])
 	location.objects = map_data.get("objects", [])
-	location.exits = map_data.get("exits", [])
-	if params.has("exits"):
-		for i in range(min(location.exits.size(), params["exits"].size())):
-			if params["exits"][i].has("target_location_id") and params["exits"][i]["target_location_id"] != "":
-				location.exits[i]["target_location_id"] = params["exits"][i]["target_location_id"]
+	
+	# === НАДЁЖНАЯ ПРИВЯЗКА target_location_id ПО КООРДИНАТАМ ===
+	# 1. Сначала берём все выходы, которые сгенерировала карта
+	var generated_exits = map_data.get("exits", [])
+	
+	# 2. Проходим по всем сюжетным дверям из params
+	for param_exit in params.get("exits", []):
+		if not param_exit.has("target_location_id") or param_exit["target_location_id"] == "":
+			continue  # это обратная дверь или дверь без ID, пропускаем
+			
+		# 3. Ищем дверь с такими же координатами среди сгенерированных
+		for gen_exit in generated_exits:
+			if gen_exit.get("x") == param_exit.get("x") and gen_exit.get("y") == param_exit.get("y"):
+				gen_exit["target_location_id"] = param_exit["target_location_id"]
+				print("LocationManager: Привязан target_location_id=", param_exit["target_location_id"], " к двери на (", param_exit["x"], ",", param_exit["y"], ")")
+				break
+	# ===============================================================
+	location.exits = generated_exits
 	location.player_start_x = map_data.get("player_start", [8, 8])[0]
 	location.player_start_y = map_data.get("player_start", [8, 8])[1]
 	location.width = map_data.get("size", 16)
 	location.height = map_data.get("size", 16)
-	
+
 	locations[location_id] = location
 	location.save()
-	
+
 	set_current_location(location, Vector2i(-1, -1))
-	
+
+	# Обновляем кэш кампании для следующих переходов
 	if campaign_mgr and campaign_mgr.has_campaign():
 		var next_locs = campaign_mgr.get_next_locations(location_id)
 		var door_index = 0
 		for exit_data in location.exits:
-			# Пропускаем обратную дверь (она уже имеет target_location_id)
 			if exit_data.get("target_location_id", "") != "":
 				continue
-			# Назначаем следующую локацию из структуры
 			if door_index < next_locs.size():
 				exit_data["target_location_id"] = next_locs[door_index]
 				door_index += 1
-		# Пересохраняем локацию с обновлёнными дверьми
 		location.save()
 	_update_door_targets_from_campaign(location)
 	print("LocationManager: Новая локация создана: ", location.name, " (ID: ", location_id, ")")
