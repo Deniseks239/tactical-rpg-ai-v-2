@@ -72,8 +72,12 @@ func _build_messages(messages: Array, request_type: String) -> Array:
 			system_prompt = "Ты — Мастер Подземелий. Отвечай кратко на русском."
 	
 	var result = [{"role": "system", "content": system_prompt}]
-	result += conversation_history
-	result += messages
+	# Для боевых описаний не добавляем историю — только текущий запрос
+	if request_type in ["battle_summary", "description", "death"]:
+		result += messages
+	else:
+		result += conversation_history
+		result += messages
 	return result
 
 func _on_request_completed(_result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, http: HTTPRequest):
@@ -111,7 +115,6 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	content = content.strip_edges()
 	
 	# Добавляем в историю
-	add_to_history("user", "")
 	add_to_history("assistant", content)
 	
 	print("AIClient: Контент после очистки (первые 300 символов):\n", content.substr(0, min(300, content.length())))
