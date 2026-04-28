@@ -121,15 +121,22 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	print("AIClient: Контент после очистки (первые 300 символов):\n", content.substr(0, min(300, content.length())))
 	
 	# Определяем тип ответа
-	if content.begins_with("{") or content.begins_with("["):
-		var parsed = JSON.parse_string(content)
-		if parsed is Array:
-			response_received.emit({"type": "actions", "data": parsed})
-		elif parsed is Dictionary:
-			response_received.emit({"type": "text", "data": content})
-		else:
-			response_received.emit({"type": "text", "data": content})
+	var parsed = JSON.parse_string(content)
+	if parsed == null:
+		# JSON повреждён — пробуем исправить
+		var fixed = _fix_incomplete_json(content)
+		if fixed != content:
+			print("AIClient: JSON повреждён, попытка исправления...")
+			parsed = JSON.parse_string(fixed)
+			
+	if parsed is Array:
+		print("Успешно распарсено как массив: ", parsed.size(), " действий")
+		response_received.emit({"type": "actions", "data": parsed})
+	elif parsed is Dictionary:
+		print("Успешно распарсено как словарь")
+		response_received.emit({"type": "text", "data": content})
 	else:
+		print("Не удалось распарсить JSON, передаём как текст")
 		response_received.emit({"type": "text", "data": content})
 
 func add_to_history(role: String, content: String):
