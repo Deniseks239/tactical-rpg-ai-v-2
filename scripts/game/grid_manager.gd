@@ -583,7 +583,8 @@ func _enter_door(exit_data: Dictionary):
 		"exit_description": exit_data.description,
 		"return_location_id": current_location.id,
 		"return_door_x": return_pos.x,
-		"return_door_y": return_pos.y
+		"return_door_y": return_pos.y,
+		"target_location_id": exit_data.get("target_location_id", "")
 	}
 	
 	game_controller.request_location_generation(door_info)
