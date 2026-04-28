@@ -283,8 +283,9 @@ func _on_cell_pressed(x: int, y: int):
 			return
 		
 		# Клик на врага — показываем меню
-		if unit_on_cell and unit_on_cell["type"] == "enemy":
-			_show_context_menu(x, y, unit_on_cell, tile_type, false)
+		if unit_on_cell and (unit_on_cell["type"] == "enemy" or unit_on_cell["type"] == "npc"):
+			print("Клик по юниту: ", unit_on_cell["name"])
+			_show_context_menu(x, y, unit_on_cell, grid_state.tiles[x][y]["type"], false)
 			return
 		
 		# Клик на NPC — показываем меню
