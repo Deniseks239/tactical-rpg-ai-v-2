@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://dxfba2l878gan"]
+
+[ext_resource type="Script" uid="uid://b6k1xem310vcq" path="res://test_scene.gd" id="1_uhqqe"]
+
+[node name="TestScene" type="Node2D" unique_id=1441762509]
+script = ExtResource("1_uhqqe")
+
+[node name="NobodyWhoModel" type="NobodyWhoModel" parent="." unique_id=448920625]
+model_path = "res://models/game_master.gguf"
+
+[node name="TestChat" type="NobodyWhoChat" parent="NobodyWhoModel" unique_id=838666623 node_paths=PackedStringArray("model_node")]
+model_node = NodePath("..")
