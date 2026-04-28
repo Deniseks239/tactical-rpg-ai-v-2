@@ -152,3 +152,47 @@ func cancel_current_request():
 		current_request.cancel_request()
 		current_request.queue_free()
 		current_request = null
+
+func _fix_incomplete_json(content: String) -> String:
+	var result = content
+	var brackets = 0
+	var braces = 0
+	var in_string = false
+	var escape = false
+	
+	for i in range(content.length()):
+		var c = content[i]
+		if escape:
+			escape = false
+			continue
+		if c == '\\':
+			escape = true
+			continue
+		if c == '"' and not escape:
+			in_string = !in_string
+			continue
+		if not in_string:
+			if c == '[':
+				brackets += 1
+			elif c == ']':
+				brackets -= 1
+			elif c == '{':
+				braces += 1
+			elif c == '}':
+				braces -= 1
+	
+	while brackets > 0:
+		result += "]"
+		brackets -= 1
+	while braces > 0:
+		result += "}"
+		braces -= 1
+	
+	var last_quote = content.rfind('"')
+	if last_quote != -1 and last_quote == content.length() - 1:
+		result += '"'
+	
+	if result != content:
+		print("JSON восстановлен: добавлено закрывающих скобок")
+	
+	return result
