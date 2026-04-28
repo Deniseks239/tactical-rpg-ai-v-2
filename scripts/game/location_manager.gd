@@ -150,6 +150,10 @@ func get_or_create_location(location_id: String, description: String = "", addit
 	location.npcs = map_data.get("npcs", [])
 	location.objects = map_data.get("objects", [])
 	location.exits = map_data.get("exits", [])
+	if params.has("exits"):
+		for i in range(min(location.exits.size(), params["exits"].size())):
+			if params["exits"][i].has("target_location_id") and params["exits"][i]["target_location_id"] != "":
+				location.exits[i]["target_location_id"] = params["exits"][i]["target_location_id"]
 	location.player_start_x = map_data.get("player_start", [8, 8])[0]
 	location.player_start_y = map_data.get("player_start", [8, 8])[1]
 	location.width = map_data.get("size", 16)
