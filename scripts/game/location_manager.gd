@@ -117,8 +117,8 @@ func get_or_create_location(location_id: String, description: String = "", addit
 			var next_info = campaign_mgr.get_location_info(next_id)
 			if not next_info.is_empty():
 				var exit_data = {
-					"x": 14,  # Правая сторона карты
-					"y": 7,   # Центр
+					"x": min(7, location.width - 1),  # Правая граница карты
+					"y": min(4, location.height - 1),  # Центр по вертикали
 					"description": next_info.get("connection_description", "Проход в " + next_info.get("name", "?")) if not next_info.is_empty() else "Проход",
 					"target_location_id": next_id
 				}
