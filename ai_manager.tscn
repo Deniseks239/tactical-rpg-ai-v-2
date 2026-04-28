@@ -5,11 +5,12 @@
 [node name="NobodyWhoModel" type="NobodyWhoModel" parent="." unique_id=1952487486]
 model_path = "res://models/game_master.gguf"
 
-[node name="MasterChat" type="NobodyWhoChat" parent="." unique_id=459243216 node_paths=PackedStringArray("model_node")]
-model_node = NodePath("../NobodyWhoModel")
+[node name="MasterChat" type="NobodyWhoChat" parent="NobodyWhoModel" unique_id=459243216 node_paths=PackedStringArray("model_node")]
+model_node = NodePath("..")
+physics_interpolation_mode = 2
 
-[node name="NPCChat" type="NobodyWhoChat" parent="." unique_id=1029255886 node_paths=PackedStringArray("model_node")]
-model_node = NodePath("../NobodyWhoModel")
+[node name="NPCChat" type="NobodyWhoChat" parent="NobodyWhoModel" unique_id=1029255886 node_paths=PackedStringArray("model_node")]
+model_node = NodePath("..")
 
-[node name="BattleChat" type="NobodyWhoChat" parent="." unique_id=814910072 node_paths=PackedStringArray("model_node")]
-model_node = NodePath("../NobodyWhoModel")
+[node name="BattleChat" type="NobodyWhoChat" parent="NobodyWhoModel" unique_id=814910072 node_paths=PackedStringArray("model_node")]
+model_node = NodePath("..")
