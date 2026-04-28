@@ -5,132 +5,100 @@ class_name AIClientNobodyWho
 signal response_received(response: Dictionary)
 signal error_occurred(error: String)
 
-# Три параллельных чата (подключаются из сцены или создаются в _ready)
-var master_chat: NobodyWhoChat   # Генерация кампании, структура мира
-var npc_chat: NobodyWhoChat      # Диалоги с NPC
-var battle_chat: NobodyWhoChat   # Описания боя, атак, смертей
-
-var model_name: String = "game_master"  # Имя файла модели без .gguf
-var PromptTemplates = preload("res://scripts/ai/prompt_templates.gd")
-
-# Системные промпты для каждого чата
-const SYSTEM_PROMPT_MASTER = """Ты — Мастер Подземелий в тактической RPG. 
-Твоя задача: создавать описания локаций, генерировать структуру кампании, 
-управлять миром. Отвечай кратко, на русском языке. 
-Для структуры кампании используй строгий JSON."""
-
-const SYSTEM_PROMPT_NPC = """Ты — NPC в RPG. Отвечай от лица своего персонажа, 
-учитывая его характер и знания. Отвечай кратко, 1-3 предложения, на русском. 
-Не используй JSON, не описывай действия от третьего лица."""
-
-const SYSTEM_PROMPT_BATTLE = """Ты описываешь боевые действия в RPG. 
-Описывай атаки, попадания, промахи, смерти — одной фразой на русском. 
-Будь эпичен и краток. Не используй JSON."""
+const API_URL = "http://127.0.0.1:8080/v1/chat/completions"
+var model_name: String = "game_master"
+var current_request: HTTPRequest = null
+var conversation_history: Array = []
+var max_history: int = 10
 
 func _ready():
-	# Ищем модель и чаты из автозагрузки AIManagerAuto
-	var aimgr = get_node_or_null("/root/AIManagerAuto")
-	
-	if aimgr:
-		# Берём существующие узлы из сцены
-		master_chat = aimgr.get_node_or_null("MasterChat")
-		npc_chat = aimgr.get_node_or_null("NPCChat")
-		battle_chat = aimgr.get_node_or_null("BattleChat")
-		
-		if master_chat:
-			master_chat.response_finished.connect(_on_master_response)
-		if npc_chat:
-			npc_chat.response_finished.connect(_on_npc_response)
-		if battle_chat:
-			battle_chat.response_finished.connect(_on_battle_response)
-		
-		print("AIClientNobodyWho: использованы чаты из AIManagerAuto")
-	else:
-		print("AIClientNobodyWho: AIManagerAuto не найден!")
+	print("AIClientLlamaServer: готов. Сервер: ", API_URL)
 
 func send_request(messages: Array, game_context: Dictionary, additional_context: Dictionary = {}, request_type: String = "default"):
-	print("AIClientNobodyWho: send_request вызван с типом ", request_type)
+	print("AIClient: send_request вызван с типом ", request_type)
+	cancel_current_request()
 	
-	# Извлекаем текст из messages
-	var user_text = ""
-	for msg in messages:
-		if msg.get("role") == "user":
-			user_text += msg.get("content", "") + "\n"
-	user_text = user_text.strip_edges()
+	var full_messages = _build_messages(messages, request_type)
 	
-	if user_text.is_empty():
-		user_text = "Продолжай."
+	current_request = HTTPRequest.new()
+	add_child(current_request)
+	current_request.request_completed.connect(_on_request_completed.bind(current_request))
 	
-	print("AIClientNobodyWho: текст запроса (первые 200 символов): ", user_text.substr(0, min(200, user_text.length())))
-	
-	# Выбираем чат по типу запроса
-	var chat: NobodyWhoChat
+	# Настройки для разных типов запросов
+	var max_tokens = 150
+	var temperature = 0.7
 	
 	match request_type:
-		"story", "location", "location_text":
-			chat = master_chat
+		"story":
+			max_tokens = 2000
+			temperature = 0.3
+		"location_text":
+			max_tokens = 400
+			temperature = 0.7
+		"description", "death":
+			max_tokens = 100
+			temperature = 0.7
+		"battle_summary":
+			max_tokens = 200
+			temperature = 0.7
+	
+	var body = {
+		"model": model_name,
+		"messages": full_messages,
+		"max_tokens": max_tokens,
+		"temperature": temperature,
+		"stream": false
+	}
+	
+	var json_body = JSON.stringify(body)
+	var headers = ["Content-Type: application/json"]
+	var error = current_request.request(API_URL, headers, HTTPClient.METHOD_POST, json_body)
+	
+	if error != OK:
+		error_occurred.emit("HTTP Request failed: " + str(error))
+		return
+	
+	print("AIClient: запрос отправлен к ", API_URL)
+
+func _build_messages(messages: Array, request_type: String) -> Array:
+	var system_prompt = ""
+	
+	match request_type:
+		"story", "location_text", "location":
+			system_prompt = "Ты — Мастер Подземелий в тактической RPG. Создавай описания локаций и сюжета. Отвечай на русском языке."
 		"description", "death", "battle_summary":
-			chat = battle_chat
-		"dialogue", "npc":
-			chat = npc_chat
+			system_prompt = "Ты описываешь боевые действия в RPG. Отвечай одной эпичной фразой на русском."
 		_:
-			chat = master_chat
+			system_prompt = "Ты — Мастер Подземелий. Отвечай кратко на русском."
 	
-	if not chat:
-		print("AIClientNobodyWho: ОШИБКА — чат не инициализирован!")
-		error_occurred.emit("Чат не инициализирован")
+	var result = [{"role": "system", "content": system_prompt}]
+	result += conversation_history
+	result += messages
+	return result
+
+func _on_request_completed(_result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, http: HTTPRequest):
+	print("AIClient: ЗАПРОС ЗАВЕРШЁН, response_code = ", response_code)
+	http.queue_free()
+	
+	if response_code != 200:
+		var response_text = body.get_string_from_utf8()
+		print("AIClient: ОШИБКА ответа: ", response_text)
+		error_occurred.emit("HTTP Error " + str(response_code) + ": " + response_text)
 		return
 	
-	print("AIClientNobodyWho: выбран чат ", chat.name, ", отправляю запрос...")
+	var response_text = body.get_string_from_utf8()
+	print("AIClient: Ответ получен (длина: ", response_text.length(), " символов)")
+	print("AIClient: Первые 300 символов ответа:\n", response_text.substr(0, min(300, response_text.length())))
 	
-	# Отправляем сообщение
-		# Отправляем сообщение
-	chat.say(user_text)
-	print("AIClientNobodyWho: запрос отправлен успешно, ожидаю ответ...")
+	# Парсим ответ в формате OpenAI API
+	var json = JSON.new()
+	var response = json.parse_string(response_text)
 	
-	# Сохраняем контекст для обработчика ответа
-	chat.set_meta("pending_request_type", request_type)
-	chat.set_meta("pending_context", additional_context)
-
-func _on_master_response(response_text: String):
-	_process_response(response_text, master_chat, "master")
-
-func _on_npc_response(response_text: String):
-	_process_response(response_text, npc_chat, "npc")
-
-func _on_battle_response(response_text: String):
-	_process_response(response_text, battle_chat, "battle")
-
-func _process_response(response_text: String, chat: NobodyWhoChat, chat_type: String):
-	if response_text.is_empty():
-		print("AIClientNobodyWho: ПУСТОЙ ОТВЕТ от ", chat_type, " чата!")
-		error_occurred.emit("Пустой ответ от модели")
+	if not response or not response.has("choices"):
+		error_occurred.emit("Invalid response format")
 		return
 	
-	print("AIClientNobodyWho: ответ от ", chat_type, " чата (длина: ", response_text.length(), " символов)")
-	print("Первые 300 символов: ", response_text.substr(0, min(300, response_text.length())))
-	
-	# Очищаем markdown и форматирование
-	var content = _clean_response(response_text)
-	
-	# Определяем тип ответа
-	if content.begins_with("{") or content.begins_with("["):
-		var parsed = JSON.parse_string(content)
-		if parsed is Array:
-			response_received.emit({"type": "actions", "data": parsed})
-			return
-		elif parsed is Dictionary:
-			response_received.emit({"type": "text", "data": content})
-			return
-		else:
-			response_received.emit({"type": "text", "data": content})
-			return
-	
-	# Обычный текст
-	response_received.emit({"type": "text", "data": content})
-
-func _clean_response(text: String) -> String:
-	var content = text.strip_edges()
+	var content = response["choices"][0]["message"]["content"]
 	
 	# Удаляем markdown обрамление
 	if content.begins_with("```json"):
@@ -140,39 +108,36 @@ func _clean_response(text: String) -> String:
 	
 	if content.ends_with("```"):
 		content = content.substr(0, content.length() - 3)
-	
 	content = content.strip_edges()
 	
-	# Исправляем двойные фигурные скобки
-	if content.begins_with("{{") and content.ends_with("}}"):
-		content = content.substr(1, content.length() - 2)
+	# Добавляем в историю
+	add_to_history("user", "")
+	add_to_history("assistant", content)
 	
-	return content
-
-# === ДОПОЛНИТЕЛЬНЫЕ МЕТОДЫ (для совместимости) ===
+	print("AIClient: Контент после очистки (первые 300 символов):\n", content.substr(0, min(300, content.length())))
+	
+	# Определяем тип ответа
+	if content.begins_with("{") or content.begins_with("["):
+		var parsed = JSON.parse_string(content)
+		if parsed is Array:
+			response_received.emit({"type": "actions", "data": parsed})
+		elif parsed is Dictionary:
+			response_received.emit({"type": "text", "data": content})
+		else:
+			response_received.emit({"type": "text", "data": content})
+	else:
+		response_received.emit({"type": "text", "data": content})
 
 func add_to_history(role: String, content: String):
-	# NobodyWho сам хранит историю — этот метод оставлен для совместимости
-	pass
+	conversation_history.append({"role": role, "content": content})
+	if conversation_history.size() > max_history:
+		conversation_history.pop_front()
 
 func clear_history():
-	# Очищаем историю всех чатов
-	if master_chat:
-		master_chat.clear_history()
-	if npc_chat:
-		npc_chat.clear_history()
-	if battle_chat:
-		battle_chat.clear_history()
+	conversation_history.clear()
 
 func cancel_current_request():
-	# NobodyWho сам управляет запросами
-	pass
-
-# === МЕТОД ДЛЯ БЫСТРОЙ СМЕНЫ SYSTEM PROMPT (НУЖНО ДЛЯ NPC) ===
-
-func set_npc_context(npc_name: String, npc_role: String, npc_knowledge: Array):
-	if npc_chat:
-		var prompt = "Ты — " + npc_name + ", " + npc_role + ". "
-		prompt += "Ты знаешь: " + str(npc_knowledge) + ". "
-		prompt += "Отвечай от лица персонажа, кратко, 1-3 предложения."
-		npc_chat.system_prompt = prompt
+	if current_request and current_request.is_inside_tree():
+		current_request.cancel_request()
+		current_request.queue_free()
+		current_request = null
