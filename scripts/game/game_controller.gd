@@ -21,6 +21,7 @@ var pending_previous_location: String = ""
 var loading_screen: CanvasLayer = null
 var story_intro: String = ""
 var llama_process_id: int = -1
+var llama_ready: bool = false
 
 
 func _ready():
@@ -52,7 +53,6 @@ func _ready():
 	ai_client.error_occurred.connect(_on_ai_error)
 	
 	print("GameController готов. Сетка инициализирована.")
-	_start_llama_server()
 	# Ждём один кадр, чтобы GridManager успел инициализироваться
 	await get_tree().process_frame
 	
@@ -902,7 +902,10 @@ func start_with_character(character: CharacterData):
 		"inventory": character.inventory
 	}
 	
-	_show_loading_screen("Мастер подземелий плетёт историю...")
+	_show_loading_screen("Запуск ИИ-сервера...")
+	_start_llama_server()
+	await _wait_for_server_ready()
+	_hide_loading_screen()
 	_request_story_intro([character])
 func request_victory_description():
 	is_waiting_for_ai = true
@@ -1044,37 +1047,77 @@ func _on_campaign_error(error: String):
 		var new_location = location_manager.generate_location(story_intro, {})
 		location_manager.set_current_location(new_location)
 func _start_llama_server():
-	# Путь к папке с игрой (где лежит .exe)
-	var base_dir = OS.get_executable_path().get_base_dir()
-	var exe_path = base_dir + "/llm_server/llama-server.exe"
-	var model_path = base_dir + "/llm_server/game_master.gguf"
+	# Путь к папке с игрой (во время разработки – папка проекта)
+	var base_dir = ProjectSettings.globalize_path("res://llm_server")
+	var exe_path = base_dir + "/llama-server.exe"
+	var model_path = base_dir + "/game_master.gguf"
 	
 	# Проверяем, запущен ли уже сервер
 	var check_request = HTTPRequest.new()
 	add_child(check_request)
 	check_request.request_completed.connect(func(result, code, headers, body):
-		if code == 200:
-			print("GameController: llama-server уже запущен")
-		else:
-			# Запускаем сервер
-			print("GameController: запускаю llama-server...")
-			
-			# Формируем аргументы
-			var args = ["-m", model_path, "--n-gpu-layers", "99", "--ctx-size", "4096", "--port", "8080"]
-			
-			# Запускаем процесс
-			var output = []
-			var exit_code = OS.execute(exe_path, args, output, true)
-			if exit_code == 0:
-				llama_process_id = OS.get_process_id()
-				print("GameController: llama-server запущен, PID: ", llama_process_id)
-			else:
-				printerr("GameController: Ошибка запуска llama-server, код: ", exit_code)
-				printerr("Вывод: ", output)
 		check_request.queue_free()
+		if code == 200:
+			print("GameController: llama-server уже отвечает")
+			_on_llama_server_ready()
+		else:
+			print("GameController: запускаю llama-server асинхронно...")
+			
+			var output = []
+			var pid = OS.create_process(exe_path, ["-m", model_path, "--n-gpu-layers", "99", "--ctx-size", "4096", "--port", "8080"], true)
+			if pid > 0:
+				llama_process_id = pid
+				print("GameController: llama-server запущен (PID: ", pid, "), ожидаю готовности...")
+				_wait_for_llama_server()
+			else:
+				printerr("GameController: Не удалось запустить llama-server. Код ошибки: ", pid)
+				_on_ai_error("Сервер ИИ не запустился")
 	)
 	check_request.request("http://127.0.0.1:8080/health")
+
+func _wait_for_llama_server():
+	# Таймер или повторные запросы – через HTTPRequest
+	var timer = get_tree().create_timer(0.5)
+	timer.timeout.connect(_check_llama_health.bind(0))
+
+func _check_llama_health(attempt: int):
+	if attempt > 15:  # 7.5 секунд таймаута
+		printerr("GameController: llama-server не ответил вовремя")
+		_on_ai_error("Сервер ИИ не запустился")
+		return
+	
+	var health_request = HTTPRequest.new()
+	add_child(health_request)
+	health_request.request_completed.connect(func(result, code, headers, body):
+		health_request.queue_free()
+		if code == 200:
+			print("GameController: llama-server готов!")
+			_on_llama_server_ready()
+		else:
+			var timer = get_tree().create_timer(0.5)
+			timer.timeout.connect(_check_llama_health.bind(attempt + 1))
+	)
+	health_request.request("http://127.0.0.1:8080/health")
+
+func _on_llama_server_ready():
+	llama_ready = true
+	pass  # Пока ничего не делаем – AI-клиент уже сам начнёт запрос
 func _exit_tree():
 	if llama_process_id != -1:
 		OS.kill(llama_process_id)
 		print("GameController: llama-server остановлен")
+func _wait_for_server_ready():
+	while not llama_ready:
+		await get_tree().create_timer(0.5).timeout
+		var http = HTTPRequest.new()
+		add_child(http)
+		var completed = false
+		http.request_completed.connect(func(_r, code, _h, _b):
+			if code == 200:
+				llama_ready = true
+			completed = true
+		)
+		http.request("http://127.0.0.1:8080/health")
+		while not completed:
+			await get_tree().process_frame
+		http.queue_free()
