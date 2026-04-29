@@ -20,6 +20,8 @@ var pending_return_door_y: int = 0
 var pending_previous_location: String = ""
 var loading_screen: CanvasLayer = null
 var story_intro: String = ""
+var llama_process_id: int = -1
+
 
 func _ready():
 	grid_state = GridState.new()
@@ -50,7 +52,7 @@ func _ready():
 	ai_client.error_occurred.connect(_on_ai_error)
 	
 	print("GameController готов. Сетка инициализирована.")
-	
+	_start_llama_server()
 	# Ждём один кадр, чтобы GridManager успел инициализироваться
 	await get_tree().process_frame
 	
@@ -1041,3 +1043,38 @@ func _on_campaign_error(error: String):
 	if location_manager:
 		var new_location = location_manager.generate_location(story_intro, {})
 		location_manager.set_current_location(new_location)
+func _start_llama_server():
+	# Путь к папке с игрой (где лежит .exe)
+	var base_dir = OS.get_executable_path().get_base_dir()
+	var exe_path = base_dir + "/llm_server/llama-server.exe"
+	var model_path = base_dir + "/llm_server/game_master.gguf"
+	
+	# Проверяем, запущен ли уже сервер
+	var check_request = HTTPRequest.new()
+	add_child(check_request)
+	check_request.request_completed.connect(func(result, code, headers, body):
+		if code == 200:
+			print("GameController: llama-server уже запущен")
+		else:
+			# Запускаем сервер
+			print("GameController: запускаю llama-server...")
+			
+			# Формируем аргументы
+			var args = ["-m", model_path, "--n-gpu-layers", "99", "--ctx-size", "4096", "--port", "8080"]
+			
+			# Запускаем процесс
+			var output = []
+			var exit_code = OS.execute(exe_path, args, output, true)
+			if exit_code == 0:
+				llama_process_id = OS.get_process_id()
+				print("GameController: llama-server запущен, PID: ", llama_process_id)
+			else:
+				printerr("GameController: Ошибка запуска llama-server, код: ", exit_code)
+				printerr("Вывод: ", output)
+		check_request.queue_free()
+	)
+	check_request.request("http://127.0.0.1:8080/health")
+func _exit_tree():
+	if llama_process_id != -1:
+		OS.kill(llama_process_id)
+		print("GameController: llama-server остановлен")
