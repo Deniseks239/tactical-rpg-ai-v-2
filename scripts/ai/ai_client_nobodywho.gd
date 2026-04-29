@@ -127,8 +127,9 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 		var fixed = _fix_incomplete_json(content)
 		if fixed != content:
 			print("AIClient: JSON повреждён, попытка исправления...")
-			parsed = JSON.parse_string(fixed)
-			
+			content = fixed
+			parsed = JSON.parse_string(content)
+	
 	if parsed is Array:
 		print("Успешно распарсено как массив: ", parsed.size(), " действий")
 		response_received.emit({"type": "actions", "data": parsed})
