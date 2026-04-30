@@ -1081,12 +1081,14 @@ func _wait_for_llama_server():
 	timer.timeout.connect(_check_llama_health.bind(0))
 
 func _check_llama_health(attempt: int):
-	if attempt > 15:  # 7.5 секунд таймаута
+	if attempt > 60:  # 7.5 секунд таймаута
 		printerr("GameController: llama-server не ответил вовремя")
 		_on_ai_error("Сервер ИИ не запустился")
 		return
 	
 	var health_request = HTTPRequest.new()
+	if attempt % 10 == 0:
+		print("GameController: всё ещё жду сервер (попытка ", attempt, ")...")
 	add_child(health_request)
 	health_request.request_completed.connect(func(result, code, headers, body):
 		health_request.queue_free()
