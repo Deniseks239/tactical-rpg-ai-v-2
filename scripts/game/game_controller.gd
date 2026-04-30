@@ -18,10 +18,12 @@ var pending_return_location_id: String = ""
 var pending_return_door_x: int = 0
 var pending_return_door_y: int = 0
 var pending_previous_location: String = ""
+var pending_target_location_id: String = ""
 var loading_screen: CanvasLayer = null
 var story_intro: String = ""
 var llama_process_id: int = -1
 var llama_ready: bool = false
+
 
 
 func _ready():
@@ -253,18 +255,15 @@ func _on_ai_response(response: Dictionary):
 				pending_action = ""
 				
 				var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
+				# НОВОЕ: ищем target_location_id для связи с сюжетом
 				var target_loc_id = ""
-				
-				if additional_params.has("return_location_id"):
+				if pending_target_location_id != "":
+					target_loc_id = pending_target_location_id
+					pending_target_location_id = ""  # сброс
+				elif additional_params.has("return_location_id"):
 					target_loc_id = additional_params["return_location_id"]
 				elif campaign_mgr and campaign_mgr.has_campaign():
 					target_loc_id = "loc_" + str(text.hash())
-				
-				if target_loc_id != "":
-					location_manager.get_or_create_location(target_loc_id, text, {})
-				else:
-					var new_location = location_manager.generate_location(text, additional_params)
-					location_manager.set_current_location(new_location)
 				
 				return
 		
@@ -669,23 +668,21 @@ func request_location_generation(location_context: Dictionary):
 	
 	# НОВОЕ: Проверяем target_location_id из двери
 	var target_id = location_context.get("target_location_id", "")
+	pending_target_location_id = target_id
 	
 	if target_id != "":
 		print("GameController: Целевая локация указана в двери: ", target_id)
-		
 		var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
 		var location_manager = get_node("/root/LocationManagerAuto")
-		
-		# Проверяем, существует ли уже эта локация
-		if location_manager and location_manager.load_location(target_id):
-			print("GameController: Локация уже существует, загружаем ", target_id)
+		if location_manager:
+			# get_or_create_location сам загрузит существующую, а если нет — создаст с описанием из кампании
 			location_manager.get_or_create_location(target_id, "", {
 				"return_location_id": pending_return_location_id,
 				"return_door_x": pending_return_door_x,
 				"return_door_y": pending_return_door_y,
 				"previous_location": pending_previous_location
 			})
-			return
+		return
 		
 		# Если есть структура кампании — используем описание оттуда
 		if campaign_mgr and campaign_mgr.has_campaign():
