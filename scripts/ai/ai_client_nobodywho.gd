@@ -120,7 +120,12 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	
 	print("AIClient: Контент после очистки (первые 300 символов):\n", content.substr(0, min(300, content.length())))
 	
-	# Определяем тип ответа
+	if not content.begins_with("{") and not content.begins_with("["):
+		print("Обычный текст, не JSON")
+		response_received.emit({"type": "text", "data": content})
+		return
+
+	# Пробуем распарсить JSON
 	var parsed = JSON.parse_string(content)
 	if parsed == null:
 		# JSON повреждён — пробуем исправить
@@ -129,7 +134,7 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 			print("AIClient: JSON повреждён, попытка исправления...")
 			content = fixed
 			parsed = JSON.parse_string(content)
-	
+
 	if parsed is Array:
 		print("Успешно распарсено как массив: ", parsed.size(), " действий")
 		response_received.emit({"type": "actions", "data": parsed})
