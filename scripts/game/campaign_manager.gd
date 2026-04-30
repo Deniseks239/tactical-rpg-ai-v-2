@@ -122,24 +122,32 @@ func get_location_info(location_id: String) -> Dictionary:
 	return {}
 
 func get_next_locations(current_location_id: String) -> Array:
-	"""Возвращает массив ID локаций, в которые можно попасть из текущей"""
 	var result = []
-	
 	if not campaign_data.has("world_structure"):
 		return result
 	
 	var world = campaign_data["world_structure"]
 	
-	# Если это стартовая локация, добавляем все connected_locations
-	if world.get("starting_location", {}).get("id") == current_location_id:
-		for loc in world.get("connected_locations", []):
-			result.append(loc.get("id"))
-	
-	# Если это одна из connected_locations, можно вернуться в стартовую
+	# 1. Обратный путь: если мы в connected-локации, то стартовая — это выход назад
 	for loc in world.get("connected_locations", []):
 		if loc.get("id") == current_location_id:
 			result.append(world["starting_location"].get("id"))
 			break
+	
+	# 2. Путь вперёд: ищем все connected-локации, у которых connected_from == current_location_id
+	for loc in world.get("connected_locations", []):
+		if loc.get("connected_from") == current_location_id:
+			result.append(loc.get("id"))
+	
+	# Если мы в стартовой локации, добавляем все connected-локации (кроме тех, что уже в обратном пути)
+	if world.get("starting_location", {}).get("id") == current_location_id:
+		for loc in world.get("connected_locations", []):
+			if loc.get("id") not in result:
+				result.append(loc.get("id"))
+	
+	# Убираем возврат, если мы в стартовой (не нужен обратный путь на старте)
+	if result.size() == 1 and result[0] == world.get("starting_location", {}).get("id"):
+		result.clear()
 	
 	return result
 
