@@ -905,6 +905,7 @@ func start_with_character(character: CharacterData):
 	_show_loading_screen("Запуск ИИ-сервера...")
 	_start_llama_server()
 	await _wait_for_server_ready()
+	print("GameController: сервер готов, скрываю загрузку и запрашиваю историю")
 	_hide_loading_screen()
 	_request_story_intro([character])
 func request_victory_description():
@@ -1093,7 +1094,7 @@ func _check_llama_health(attempt: int):
 	health_request.request_completed.connect(func(result, code, headers, body):
 		health_request.queue_free()
 		if code == 200:
-			print("GameController: llama-server готов!")
+			print("GameController: healthcheck OK, вызываю _on_llama_server_ready")
 			_on_llama_server_ready()
 		else:
 			var timer = get_tree().create_timer(0.5)
@@ -1102,8 +1103,8 @@ func _check_llama_health(attempt: int):
 	health_request.request("http://127.0.0.1:8080/health")
 
 func _on_llama_server_ready():
+	print("GameController: _on_llama_server_ready вызван!")
 	llama_ready = true
-	pass  # Пока ничего не делаем – AI-клиент уже сам начнёт запрос
 func _exit_tree():
 	if llama_process_id != -1:
 		OS.kill(llama_process_id)
