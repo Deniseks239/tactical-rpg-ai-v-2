@@ -904,6 +904,7 @@ func start_with_character(character: CharacterData):
 	
 	_show_loading_screen("Запуск ИИ-сервера...")
 	_start_llama_server()
+	print("GameController: жду готовности сервера из start_with_character")
 	await _wait_for_server_ready()
 	print("GameController: сервер готов, скрываю загрузку и запрашиваю историю")
 	_hide_loading_screen()
@@ -1079,28 +1080,6 @@ func _start_llama_server():
 func _wait_for_llama_server():
 	# Таймер или повторные запросы – через HTTPRequest
 	var timer = get_tree().create_timer(0.5)
-	timer.timeout.connect(_check_llama_health.bind(0))
-
-func _check_llama_health(attempt: int):
-	if attempt > 60:  # 7.5 секунд таймаута
-		printerr("GameController: llama-server не ответил вовремя")
-		_on_ai_error("Сервер ИИ не запустился")
-		return
-	
-	var health_request = HTTPRequest.new()
-	if attempt % 10 == 0:
-		print("GameController: всё ещё жду сервер (попытка ", attempt, ")...")
-	add_child(health_request)
-	health_request.request_completed.connect(func(result, code, headers, body):
-		health_request.queue_free()
-		if code == 200:
-			print("GameController: healthcheck OK, вызываю _on_llama_server_ready")
-			_on_llama_server_ready()
-		else:
-			var timer = get_tree().create_timer(0.5)
-			timer.timeout.connect(_check_llama_health.bind(attempt + 1))
-	)
-	health_request.request("http://127.0.0.1:8080/health")
 
 func _on_llama_server_ready():
 	print("GameController: _on_llama_server_ready вызван!")
@@ -1110,17 +1089,19 @@ func _exit_tree():
 		OS.kill(llama_process_id)
 		print("GameController: llama-server остановлен")
 func _wait_for_server_ready():
+	print("GameController: начинаю ожидание сервера...")
 	while not llama_ready:
 		await get_tree().create_timer(0.5).timeout
+		print("GameController: проверяю сервер...")
 		var http = HTTPRequest.new()
 		add_child(http)
-		var completed = false
 		http.request_completed.connect(func(_r, code, _h, _b):
+			print("GameController: healthcheck ответ: ", code)
 			if code == 200:
-				llama_ready = true
-			completed = true
+				print("GameController: сервер ответил 200, готов!")
+				_on_llama_server_ready()
 		)
 		http.request("http://127.0.0.1:8080/health")
-		while not completed:
-			await get_tree().process_frame
+		await http.request_completed  # Ждём завершения этого конкретного запроса
 		http.queue_free()
+	print("GameController: сервер точно готов, выхожу из ожидания")
