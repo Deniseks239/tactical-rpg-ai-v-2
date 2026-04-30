@@ -103,6 +103,7 @@ static func get_campaign_structure_prompt(story_intro: String, character_name: S
 - Главный квест должен иметь 3-4 этапа
 - ВСЕ тексты на русском языке
 - Ответь ТОЛЬКО JSON'ом, без дополнительного текста
+- Локации должны быть ПОСЛЕДОВАТЕЛЬНОЙ ЦЕПОЧКОЙ: стартовая -> loc_1 -> loc_2 -> loc_3. connected_from каждой следующей локации должна указывать на предыдущую.
 """ % [story_intro, character_name]
 static func get_story_intro_prompt(characters: Array) -> String:
 	var chars_desc = ""
