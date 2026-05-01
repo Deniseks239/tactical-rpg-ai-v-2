@@ -737,8 +737,23 @@ func _show_context_menu(grid_x: int, grid_y: int, unit_data: Variant, tile_type,
 func _on_context_menu_selected(id: int, grid_x: int, grid_y: int, unit_data, tile_type):
 	match id:
 		0:  # Атаковать
-			if unit_data and unit_data["type"] == "enemy":
-				_attack(selected_unit_id, unit_data["id"])
+			if distance > 1:
+				# Ищем ближайшую свободную клетку рядом с врагом
+				var adjacent_cell = _find_free_adjacent_cell_for_enemy(player_pos, enemy_pos)
+				if adjacent_cell != Vector2i(-1, -1):
+					# Перемещаем игрока
+					grid_state.remove_unit("player_1")
+					grid_state.set_unit("player_1", current_player_name, "player", adjacent_cell.x, adjacent_cell.y)
+					refresh_grid()
+					# Обновляем позицию для дальнейших чеков
+					player_pos = adjacent_cell
+					selected_unit_id = "player_1"
+					_update_highlight()
+				else:
+					game_controller.game_message.emit("Невозможно подойти!")
+					return
+			# Теперь атакуем
+			_attack("player_1", enemy_id)
 		1:  # Говорить
 			if unit_data:
 				_talk_to_unit(unit_data)
@@ -747,16 +762,23 @@ func _on_context_menu_selected(id: int, grid_x: int, grid_y: int, unit_data, til
 		3:  # Взаимодействовать
 			_interact_with_object(grid_x, grid_y, tile_type)
 		4:  # Войти в дверь
-			var door_key = str(grid_x) + "_" + str(grid_y)
-			if "doors" in grid_state and grid_state.doors.has(door_key):
-				var door = grid_state.doors[door_key]
-				_enter_door({
-					"x": grid_x, "y": grid_y,
-					"description": door.description,
-					"target_location_id": door.target_location_id,
-					"target_door_id": door.target_door_id
-				})
-	
+			if distance > 0:  # Если не на двери, подходим
+				var door_cell = Vector2i(grid_x, grid_y)
+				var adjacent_cell = _find_free_adjacent_cell_for_door(player_pos, door_cell)
+				if adjacent_cell != Vector2i(-1, -1):
+					grid_state.remove_unit("player_1")
+					grid_state.set_unit("player_1", current_player_name, "player", adjacent_cell.x, adjacent_cell.y)
+					refresh_grid()
+					selected_unit_id = "player_1"
+					_update_highlight()
+					# После перемещения снова вызываем вход (рекурсивно или просто _enter_door)
+					_enter_door(...)
+					return
+				else:
+					game_controller.game_message.emit("Невозможно подойти к двери!")
+					return
+			else:
+				_enter_door(...)
 	_remove_context_menu()
 	_update_highlight()
 
