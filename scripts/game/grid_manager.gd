@@ -734,54 +734,88 @@ func _show_context_menu(grid_x: int, grid_y: int, unit_data: Variant, tile_type,
 	
 	# Подключаем выбор пункта меню
 	menu.id_pressed.connect(_on_context_menu_selected.bind(grid_x, grid_y, unit_data, tile_type))
+func _find_free_adjacent_cell_for_attack(player_pos: Vector2i, enemy_pos: Vector2i) -> Vector2i:
+	var best_cell = Vector2i(-1, -1)
+	var best_distance = 9999
+	
+	for dx in range(-1, 2):
+		for dy in range(-1, 2):
+			if dx == 0 and dy == 0:
+				continue
+			var nx = enemy_pos.x + dx
+			var ny = enemy_pos.y + dy
+			
+			if nx >= 0 and nx < grid_state.width and ny >= 0 and ny < grid_state.height:
+				if grid_state.is_walkable(nx, ny, "player_1"):
+					var dist_to_player = abs(player_pos.x - nx) + abs(player_pos.y - ny)
+					if dist_to_player < best_distance:
+						best_distance = dist_to_player
+						best_cell = Vector2i(nx, ny)
+	
+	return best_cell
 func _on_context_menu_selected(id: int, grid_x: int, grid_y: int, unit_data, tile_type):
+	var player_pos = grid_state.get_unit_position("player_1")
+	var distance_to_target = max(abs(player_pos.x - grid_x), abs(player_pos.y - grid_y))
+
 	match id:
 		0:  # Атаковать
-			if distance > 1:
-				# Ищем ближайшую свободную клетку рядом с врагом
-				var adjacent_cell = _find_free_adjacent_cell_for_enemy(player_pos, enemy_pos)
-				if adjacent_cell != Vector2i(-1, -1):
-					# Перемещаем игрока
-					grid_state.remove_unit("player_1")
-					grid_state.set_unit("player_1", current_player_name, "player", adjacent_cell.x, adjacent_cell.y)
-					refresh_grid()
-					# Обновляем позицию для дальнейших чеков
-					player_pos = adjacent_cell
-					selected_unit_id = "player_1"
-					_update_highlight()
-				else:
-					game_controller.game_message.emit("Невозможно подойти!")
-					return
-			# Теперь атакуем
-			_attack("player_1", enemy_id)
+			if unit_data and unit_data["type"] == "enemy":
+				if distance_to_target > 1:
+					# Ищем ближайшую свободную клетку рядом с врагом
+					var enemy_pos = grid_state.get_unit_position(unit_data["id"])
+					var adjacent_cell = _find_free_adjacent_cell_for_attack(player_pos, enemy_pos)
+					if adjacent_cell != Vector2i(-1, -1):
+						# Перемещаем игрока
+						grid_state.remove_unit("player_1")
+						grid_state.set_unit("player_1", game_controller.current_player_name, "player", adjacent_cell.x, adjacent_cell.y)
+						refresh_grid()
+						player_pos = adjacent_cell
+						selected_unit_id = "player_1"
+						_update_highlight()
+					else:
+						game_controller.game_message.emit("Невозможно подойти!")
+						return
+				_attack("player_1", unit_data["id"])
+
 		1:  # Говорить
 			if unit_data:
 				_talk_to_unit(unit_data)
+
 		2:  # Осмотреть
 			_examine_cell(grid_x, grid_y, tile_type, unit_data)
+
 		3:  # Взаимодействовать
 			_interact_with_object(grid_x, grid_y, tile_type)
+
 		4:  # Войти в дверь
-			if distance > 0:  # Если не на двери, подходим
-				var door_cell = Vector2i(grid_x, grid_y)
-				var adjacent_cell = _find_free_adjacent_cell_for_door(player_pos, door_cell)
-				if adjacent_cell != Vector2i(-1, -1):
-					grid_state.remove_unit("player_1")
-					grid_state.set_unit("player_1", current_player_name, "player", adjacent_cell.x, adjacent_cell.y)
-					refresh_grid()
-					selected_unit_id = "player_1"
-					_update_highlight()
-					# После перемещения снова вызываем вход (рекурсивно или просто _enter_door)
-					_enter_door(...)
-					return
-				else:
-					game_controller.game_message.emit("Невозможно подойти к двери!")
-					return
-			else:
-				_enter_door(...)
+			var door_key = str(grid_x) + "_" + str(grid_y)
+			if "doors" in grid_state and grid_state.doors.has(door_key):
+				var door = grid_state.doors[door_key]
+				if distance_to_target > 0:
+					# Ищем ближайшую свободную клетку рядом с дверью
+					var adjacent_cell = _find_free_adjacent_cell_for_door(player_pos, Vector2i(grid_x, grid_y))
+					if adjacent_cell != Vector2i(-1, -1):
+						grid_state.remove_unit("player_1")
+						grid_state.set_unit("player_1", game_controller.current_player_name, "player", adjacent_cell.x, adjacent_cell.y)
+						refresh_grid()
+						player_pos = adjacent_cell
+						selected_unit_id = "player_1"
+						_update_highlight()
+					else:
+						game_controller.game_message.emit("Невозможно подойти к двери!")
+						return
+				# Теперь игрок рядом — входим
+				_enter_door({
+					"x": grid_x,
+					"y": grid_y,
+					"description": door.description,
+					"target_location_id": door.target_location_id,
+					"target_door_id": door.target_door_id
+				})
+
 	_remove_context_menu()
 	_update_highlight()
-
+	
 func _talk_to_unit(unit_data: Dictionary):
 	var unit_name = unit_data.get("name", "Неизвестный")
 	print("Попытка поговорить с ", unit_name)
@@ -854,3 +888,22 @@ func _remove_context_menu():
 	var menu = get_node_or_null("ContextMenu")
 	if menu:
 		menu.queue_free()
+func _find_free_adjacent_cell_for_door(player_pos: Vector2i, door_pos: Vector2i) -> Vector2i:
+	var best_cell = Vector2i(-1, -1)
+	var best_distance = 9999
+	
+	for dx in range(-1, 2):
+		for dy in range(-1, 2):
+			if dx == 0 and dy == 0:
+				continue
+			var nx = door_pos.x + dx
+			var ny = door_pos.y + dy
+			
+			if nx >= 0 and nx < grid_state.width and ny >= 0 and ny < grid_state.height:
+				if grid_state.is_walkable(nx, ny, "player_1"):
+					var dist_to_player = abs(player_pos.x - nx) + abs(player_pos.y - ny)
+					if dist_to_player < best_distance:
+						best_distance = dist_to_player
+						best_cell = Vector2i(nx, ny)
+	
+	return best_cell
