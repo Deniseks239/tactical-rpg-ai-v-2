@@ -6,6 +6,7 @@ extends Control
 @export var load_button: Button
 @export var quit_button: Button
 @export var status_label: Label
+@export var settings_button: Button
 
 var server_started = false
 
@@ -21,6 +22,8 @@ func _ready():
 		load_button.disabled = true  # Пока нет сохранений
 	if quit_button:
 		quit_button.pressed.connect(_on_quit_pressed)
+	if settings_button:
+		settings_button.pressed.connect(_on_settings_pressed)
 
 func _start_llama_server():
 	if status_label:
@@ -52,3 +55,6 @@ func _on_load_pressed():
 
 func _on_quit_pressed():
 	get_tree().quit()
+func _on_settings_pressed():
+	# Заглушка для будущих настроек
+	pass
