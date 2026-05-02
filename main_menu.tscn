@@ -2,12 +2,17 @@
 
 [ext_resource type="Script" uid="uid://bqkngc160jtpj" path="res://main_menu.gd" id="1_06t4h"]
 
-[node name="MainMenu" type="Control" unique_id=336166975]
+[node name="MainMenu" type="Control" unique_id=336166975 node_paths=PackedStringArray("new_game_button", "load_button", "quit_button", "status_label", "settings_button")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("1_06t4h")
+new_game_button = NodePath("Panel/VBoxContainer/NewGameButton")
+load_button = NodePath("Panel/VBoxContainer/LoadButton")
+quit_button = NodePath("Panel/VBoxContainer/QuitButton")
+status_label = NodePath("Panel/VBoxContainer/StatusLabel")
+settings_button = NodePath("Panel/VBoxContainer/SettingsButton")
 
 [node name="Panel" type="Panel" parent="." unique_id=1596602184]
 layout_mode = 0
@@ -19,14 +24,26 @@ layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
 
-[node name="NewGameButton" type="Button" parent="Panel/VBoxContainer" unique_id=591714651]
+[node name="StatusLabel" type="Label" parent="Panel/VBoxContainer" unique_id=446951520]
+custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
+
+[node name="NewGameButton" type="Button" parent="Panel/VBoxContainer" unique_id=591714651]
+custom_minimum_size = Vector2(300, 60)
+layout_mode = 2
+text = "Новая игра"
 
 [node name="LoadButton" type="Button" parent="Panel/VBoxContainer" unique_id=684063106]
+custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
+text = "Загрузить"
 
 [node name="SettingsButton" type="Button" parent="Panel/VBoxContainer" unique_id=2138945973]
+custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
+text = "Настройки"
 
 [node name="QuitButton" type="Button" parent="Panel/VBoxContainer" unique_id=247376390]
+custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
+text = "Выход"
