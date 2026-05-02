@@ -19,18 +19,11 @@ static func generate(params: Dictionary) -> Dictionary:
 	var location_type = params.get("location_type", "default")
 	var generator = params.get("generator", "default")
 
-	if generator == "city":
-		print("ProceduralMap: Генерация города")
-		return CityGenerator.generate_city(params)
-	elif generator == "tavern":
-		print("ProceduralMap: Генерация таверны")
-		return generate_tavern(params)
-	elif generator == "camp":
-		print("ProceduralMap: Генерация лагеря (пока используем default)")
-		# TODO: добавить generate_camp
-	elif generator == "house":
-		print("ProceduralMap: Генерация дома (пока используем default)")
-		# TODO: добавить generate_house
+	match generator:
+		"city", "tavern":
+			print("ProceduralMap: Генерация %s (пока используем default)" % generator)
+		"camp", "house":
+			print("ProceduralMap: Генерация %s (пока используем default)" % generator)
 
 	# Инициализируем генератор случайных чисел
 	seed(seed)
