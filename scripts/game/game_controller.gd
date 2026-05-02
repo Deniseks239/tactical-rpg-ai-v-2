@@ -162,180 +162,187 @@ func _string_to_tile_type(type_str: String):
 func _on_ai_response(response: Dictionary):
 	var typ = response.get("type")
 	
-	print("=== _on_ai_response: typ = ", typ)
-	
-	if typ == "actions":
-		var actions = response["data"]
-		print("Получено действий от AI: ", actions.size())
-		for i in range(actions.size()):
-			var action = actions[i]
-			print("Действие ", i, ": ", action)
-			_handle_action(action)
-		_refresh_grid()
-	
-	elif typ == "tool_calls":
-		var tool_calls = response["data"]
-		print("Получены вызовы инструментов: ", tool_calls)
-		for tool_call in tool_calls:
-			var function_name = tool_call["function"]["name"]
-			var arguments = JSON.parse_string(tool_call["function"]["arguments"])
-			match function_name:
-				"attack_enemy":
-					print("Атака врага: ", arguments["enemy_name"])
-				"move_player":
-					print("Перемещение: ", arguments["direction"])
-		return
-	
-	elif typ == "text":
-		var text = response["data"]
-		
-		# ПРОВЕРЯЕМ: это ответ на запрос структуры кампании или story_intro
-		if pending_action == "story_intro":
+	match typ:
+		"actions":
+			_handle_actions_response(response["data"])
+		"tool_calls":
+			_handle_tool_calls_response(response["data"])
+		"text", "description":
+			_handle_text_response(response["data"])
+		_:
+			print("Неизвестный тип ответа: ", typ)
+func _handle_actions_response(actions: Array):
+	print("Получено действий от AI: ", actions.size())
+	for action in actions:
+		_handle_action(action)
+	_refresh_grid()
+
+func _handle_tool_calls_response(tool_calls: Array):
+	print("Получены вызовы инструментов: ", tool_calls)
+	for tool_call in tool_calls:
+		var function_name = tool_call["function"]["name"]
+		var arguments = JSON.parse_string(tool_call["function"]["arguments"])
+		match function_name:
+			"attack_enemy":
+				print("Атака врага: ", arguments["enemy_name"])
+			"move_player":
+				print("Перемещение: ", arguments["direction"])
+
+func _handle_text_response(text: String):
+	# Обработка в зависимости от ожидаемого действия (pending_action)
+	match pending_action:
+		"story_intro":
 			_on_story_received(text)
 			return
-		
-		# ===== ПРОВЕРЯЕМ JSON ДЛЯ ГЕНЕРАЦИИ ЛОКАЦИИ (старый способ) =====
-		var json_start = text.find("{")
-		var json_end = text.rfind("}")
-		if json_start != -1 and json_end != -1 and json_end > json_start:
-			var json_str = text.substr(json_start, json_end - json_start + 1)
-			var json = JSON.new()
-			var parse_result = json.parse_string(json_str)
-			if parse_result is Dictionary:
-				print("JSON успешно распарсен")
-				if parse_result.get("action") == "generate_location":
-					var params = parse_result.get("parameters", {})
-					print("Генерация локации с параметрами: ", params)
-					var location_manager = get_node("/root/LocationManagerAuto")
-					if location_manager:
-						var new_location = location_manager.generate_location(text, {"return_location_id": pending_return_location_id, "return_door_x": pending_return_door_x, "return_door_y": pending_return_door_y, "previous_location": pending_previous_location})
-						location_manager.set_current_location(new_location)
-						return
-		
-		# ===== ПРОВЕРЯЕМ СТРУКТУРИРОВАННУЮ КОМАНДУ [команда:цель:число] =====
-		var regex = RegEx.new()
-		regex.compile("\\[([a-z]+):([a-zа-я]+):(\\d+)\\]")
-		var match = regex.search(text)
-		
-		if match:
-			var command = match.get_string(1)
-			var target = match.get_string(2)
-			var value = int(match.get_string(3))
-			
-			print("Команда: ", command, ", цель: ", target, ", значение: ", value)
-			
-			match command:
-				"attack":
-					_perform_attack_by_name(target)
-				"move":
-					_perform_move_by_direction(target)
-				"examine":
-					game_message.emit("Осмотр: " + target)
+		"entering_door":
+			_try_generate_location_from_text(text)
 			return
-		
-		# Текстовая генерация локации (использует структуру кампании)
-		if not text.begins_with("[") and not text.begins_with("{"):
-			var location_manager = get_node("/root/LocationManagerAuto")
-			if location_manager and (location_manager.current_location == null or pending_action == "entering_door"):
-				print("Получено текстовое описание локации, передаём в LocationManager")
-		
-				var additional_params = {}
-				if pending_return_location_id != "":
-					additional_params = {
-						"return_location_id": pending_return_location_id,
-						"return_door_x": pending_return_door_x,
-						"return_door_y": pending_return_door_y,
-						"previous_location": pending_previous_location
-					}
-					pending_return_location_id = ""
-					pending_return_door_x = 0
-					pending_return_door_y = 0
-					pending_previous_location = ""
-		
-				pending_action = ""
-				
-				var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
-				# НОВОЕ: ищем target_location_id для связи с сюжетом
-				var target_loc_id = ""
-				if pending_target_location_id != "":
-					target_loc_id = pending_target_location_id
-					pending_target_location_id = ""  # сброс
-				elif additional_params.has("return_location_id"):
-					target_loc_id = additional_params["return_location_id"]
-				elif campaign_mgr and campaign_mgr.has_campaign():
-					target_loc_id = "loc_" + str(text.hash())
-				
-				return
-		
-		# ===== ОБЫЧНЫЙ ТЕКСТ =====
-		if text and not text.is_empty():
-			# НЕ показываем JSON игроку
-			if not text.begins_with("{") and not text.begins_with("["):
-				game_message.emit(text)
-				print("AI говорит: ", text)
-		
-		is_waiting_for_ai = false
-		
-		if pending_action == "battle_summary":
+		"battle_summary":
 			print("Суммарное описание хода получено, передаём ход врагам")
 			pending_action = ""
 			clear_events()
 			_proceed_to_enemy_turn()
 			return
-		
-		if combat_state.action_points <= 0 and combat_state.get_all_enemies().size() > 0:
-			print("Очки действий закончились, передаём ход врагам")
-			_proceed_to_enemy_turn()
+		"enemy_turn":
+			_handle_enemy_turn_description(text)
 			return
-	
-	elif typ == "description":
-		var text = response["data"]
-		if text and not text.is_empty():
-			game_message.emit(text)
-			print("Описание: ", text)
-		
-		is_waiting_for_ai = false
-		
-		if pending_action == "enemy_turn":
-			if _pending_attacks.size() > 0:
-				var next_attack = _pending_attacks.pop_front()
-				print("Описываем следующую атаку врага: ", next_attack["name"])
-				if next_attack["is_hit"]:
-					request_action_description("атака врага", next_attack["name"], "Арагорн", next_attack["damage"], true)
-				else:
-					request_action_description("атака врага", next_attack["name"], "Арагорн", 0, false)
-			else:
-				print("Все атаки врагов описаны, передаём ход игроку")
-				pending_action = ""
-				if combat_state.units.get("player_1", {}).get("hp", 0) <= 0:
-					game_message.emit("Арагорн повержен! Игра окончена.")
-					game_over = true
-					return
-				var enemies = combat_state.get_all_enemies()
-				if enemies.is_empty():
-					game_message.emit("Все враги повержены! Вы победили!")
-					combat_state.mode = CombatState.GameMode.PEACEFUL
-				else:
-					combat_state.current_turn_index = 0
-					combat_state.reset_action_points()
-					game_message.emit("Ваш ход!")
-					_refresh_grid()
-		
-		elif pending_action == "player_attack":
+		"player_attack":
 			print("Атака игрока завершена (description)")
 			pending_action = ""
 			if combat_state.action_points <= 0 and not game_over:
 				end_player_turn()
-		
-		elif pending_action == "battle_summary":
-			print("Суммарное описание хода получено (description), передаём ход врагам")
-			pending_action = ""
-			clear_events()
-			_proceed_to_enemy_turn()
 			return
+
+	# Действия по умолчанию, если нет конкретного ожидания
+	# 1. Попытка распарсить JSON на структурированные команды
+	if _try_parse_structured_command(text):
+		return
+		
+	# 2. Попытка распарсить JSON на генерацию локации
+	if _try_parse_location_json(text):
+		return
+		
+	# 3. Генерация локации из текста, если мы у двери
+	if _try_generate_location_from_text(text):
+		return
+		
+	# 4. Простое текстовое сообщение игроку
+	if text and not text.is_empty():
+		game_message.emit(text)
+		print("AI говорит: ", text)
 	
+	is_waiting_for_ai = false
+
+func _handle_enemy_turn_description(text: String):
+	if text and not text.is_empty():
+		game_message.emit(text)
+		print("Описание: ", text)
+	
+	is_waiting_for_ai = false
+	
+	if _pending_attacks.size() > 0:
+		var next_attack = _pending_attacks.pop_front()
+		print("Описываем следующую атаку врага: ", next_attack["name"])
+		if next_attack["is_hit"]:
+			request_action_description("атака врага", next_attack["name"], current_player_name, next_attack["damage"], true)
+		else:
+			request_action_description("атака врага", next_attack["name"], current_player_name, 0, false)
 	else:
-		print("Неизвестный тип ответа: ", typ)
+		print("Все атаки врагов описаны, передаём ход игроку")
+		pending_action = ""
+		if combat_state.units.get("player_1", {}).get("hp", 0) <= 0:
+			game_message.emit(current_player_name + " повержен! Игра окончена.")
+			game_over = true
+			return
+		var enemies = combat_state.get_all_enemies()
+		if enemies.is_empty():
+			game_message.emit("Все враги повержены! Вы победили!")
+			combat_state.mode = CombatState.GameMode.PEACEFUL
+		else:
+			combat_state.current_turn_index = 0
+			combat_state.reset_action_points()
+			game_message.emit("Ваш ход!")
+			_refresh_grid()
+
+# --- Вспомогательные приватные методы-утилиты ---
+
+func _try_parse_structured_command(text: String) -> bool:
+	var regex = RegEx.new()
+	regex.compile("\\[([a-z]+):([a-zа-я]+):(\\d+)\\]")
+	var match = regex.search(text)
+	if match:
+		var command = match.get_string(1)
+		var target = match.get_string(2)
+		var value = int(match.get_string(3))
+		print("Команда: ", command, ", цель: ", target, ", значение: ", value)
+		match command:
+			"attack":
+				_perform_attack_by_name(target)
+			"move":
+				_perform_move_by_direction(target)
+			"examine":
+				game_message.emit("Осмотр: " + target)
+		return true
+	return false
+
+func _try_parse_location_json(text: String) -> bool:
+	var json_start = text.find("{")
+	var json_end = text.rfind("}")
+	if json_start != -1 and json_end != -1 and json_end > json_start:
+		var json_str = text.substr(json_start, json_end - json_start + 1)
+		var json = JSON.new()
+		var parse_result = json.parse_string(json_str)
+		if parse_result is Dictionary and parse_result.get("action") == "generate_location":
+			print("JSON успешно распарсен")
+			var params = parse_result.get("parameters", {})
+			print("Генерация локации с параметрами: ", params)
+			var location_manager = get_node("/root/LocationManagerAuto")
+			if location_manager:
+				var new_location = location_manager.generate_location(text, {"return_location_id": pending_return_location_id, "return_door_x": pending_return_door_x, "return_door_y": pending_return_door_y, "previous_location": pending_previous_location})
+				location_manager.set_current_location(new_location)
+			return true
+	return false
+
+func _try_generate_location_from_text(text: String) -> bool:
+	if text.begins_with("[") or text.begins_with("{"):
+		return false
+		
+	var location_manager = get_node("/root/LocationManagerAuto")
+	if not location_manager or (location_manager.current_location != null and pending_action != "entering_door"):
+		return false
+		
+	print("Получено текстовое описание локации, передаём в LocationManager")
+
+	var additional_params = {}
+	if pending_return_location_id != "":
+		additional_params = {
+			"return_location_id": pending_return_location_id,
+			"return_door_x": pending_return_door_x,
+			"return_door_y": pending_return_door_y,
+			"previous_location": pending_previous_location
+		}
+		pending_return_location_id = ""
+		pending_return_door_x = 0
+		pending_return_door_y = 0
+		pending_previous_location = ""
+
+	pending_action = ""
+	
+	var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
+	var target_loc_id = ""
+	
+	if additional_params.has("return_location_id"):
+		target_loc_id = additional_params["return_location_id"]
+	elif campaign_mgr and campaign_mgr.has_campaign():
+		target_loc_id = "loc_" + str(text.hash())
+	
+	if target_loc_id != "":
+		location_manager.get_or_create_location(target_loc_id, text, {})
+	else:
+		var new_location = location_manager.generate_location(text, additional_params)
+		location_manager.set_current_location(new_location)
+	
+	return true
 
 func request_action_description(action_text: String, attacker: String, defender: String, damage: int, is_hit: bool):
 	is_waiting_for_ai = true
