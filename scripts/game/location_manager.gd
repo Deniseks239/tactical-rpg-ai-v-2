@@ -154,7 +154,15 @@ func get_or_create_location(location_id: String, description: String = "", addit
 	location.description = description
 	location.parent_location_id = params.get("parent_location_id", "")
 	location.door_id = params.get("door_id", "")
-	
+	# Если парсер не создал ни одного выхода – добавляем стандартный
+	if params.get("exits", []).is_empty():
+		params["exits"] = [{
+			"x": 7,
+			"y": 4,
+			"description": "Тёмный проход",
+			"target_location_id": ""
+		}]
+		print("LocationManager: добавлен выход по умолчанию")
 	var map_data = ProceduralMap.generate(params)
 	location.tiles = map_data.get("tiles", [])
 	location.heights = map_data.get("heights", [])
