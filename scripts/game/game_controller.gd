@@ -62,6 +62,7 @@ func _ready():
 	# Запускаем AI генерацию
 	#_start_game()
 	print("GameController готов. Ожидание создания персонажа.")
+	_start_llama_server()
 
 func _start_game():
 	_show_loading_screen("Мастер подземелий создаёт мир...")
