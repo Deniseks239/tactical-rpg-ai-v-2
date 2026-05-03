@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://dwinljl6mhimv"]
+[gd_scene format=3 uid="uid://dwinljl6mhimv"]
 
 [ext_resource type="Script" uid="uid://cxqe7n8ah10g" path="res://scenes/character_creator.gd" id="1_tvdat"]
 
-[node name="Control" type="Control"]
+[node name="Control" type="Control" unique_id=973245161]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_tvdat")
 
-[node name="MainPanel" type="Panel" parent="."]
+[node name="MainPanel" type="Panel" parent="." unique_id=1950801938]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,7 +19,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MainVBox" type="VBoxContainer" parent="MainPanel"]
+[node name="MainVBox" type="VBoxContainer" parent="MainPanel" unique_id=1492589218]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -28,56 +28,56 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 10
 
-[node name="TitleLabel" type="Label" parent="MainPanel/MainVBox"]
+[node name="TitleLabel" type="Label" parent="MainPanel/MainVBox" unique_id=696641072]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Создание персонажа"
 horizontal_alignment = 1
 
-[node name="NameRow" type="HBoxContainer" parent="MainPanel/MainVBox"]
+[node name="NameRow" type="HBoxContainer" parent="MainPanel/MainVBox" unique_id=1129140192]
 layout_mode = 2
 
-[node name="Имя" type="Label" parent="MainPanel/MainVBox/NameRow"]
+[node name="Имя" type="Label" parent="MainPanel/MainVBox/NameRow" unique_id=249814032]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 
-[node name="NameInput" type="LineEdit" parent="MainPanel/MainVBox/NameRow"]
+[node name="NameInput" type="LineEdit" parent="MainPanel/MainVBox/NameRow" unique_id=832203791]
 custom_minimum_size = Vector2(300, 20)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 placeholder_text = "Введите имя"
 
-[node name="ClassRow" type="HBoxContainer" parent="MainPanel/MainVBox"]
+[node name="ClassRow" type="HBoxContainer" parent="MainPanel/MainVBox" unique_id=1597306884]
 layout_mode = 2
 
-[node name="Класс" type="Label" parent="MainPanel/MainVBox/ClassRow"]
+[node name="Класс" type="Label" parent="MainPanel/MainVBox/ClassRow" unique_id=1061210060]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 
-[node name="ClassSelect" type="OptionButton" parent="MainPanel/MainVBox/ClassRow"]
+[node name="ClassSelect" type="OptionButton" parent="MainPanel/MainVBox/ClassRow" unique_id=1919100322]
 custom_minimum_size = Vector2(300, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 
-[node name="RaceRow" type="HBoxContainer" parent="MainPanel/MainVBox"]
+[node name="RaceRow" type="HBoxContainer" parent="MainPanel/MainVBox" unique_id=573174043]
 layout_mode = 2
 
-[node name="Раса" type="Label" parent="MainPanel/MainVBox/RaceRow"]
+[node name="Раса" type="Label" parent="MainPanel/MainVBox/RaceRow" unique_id=16957970]
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 
-[node name="RaceSelect" type="OptionButton" parent="MainPanel/MainVBox/RaceRow"]
+[node name="RaceSelect" type="OptionButton" parent="MainPanel/MainVBox/RaceRow" unique_id=55182637]
 custom_minimum_size = Vector2(300, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 
-[node name="CreateButton" type="Button" parent="MainPanel/MainVBox"]
+[node name="CreateButton" type="Button" parent="MainPanel/MainVBox" unique_id=833792613]
 custom_minimum_size = Vector2(200, 40)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Создать персонажа"
 
-[node name="StartButton" type="Button" parent="MainPanel/MainVBox"]
+[node name="StartButton" type="Button" parent="MainPanel/MainVBox" unique_id=134022102]
 layout_mode = 2
 disabled = true
 text = "Начать игру"
