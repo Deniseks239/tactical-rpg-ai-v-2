@@ -2,6 +2,7 @@ extends Node
 class_name GameController
 
 signal game_message(text: String)
+signal llama_server_ready
 
 var grid_state: GridState
 var combat_state: CombatState
@@ -1088,6 +1089,7 @@ func _wait_for_llama_server():
 func _on_llama_server_ready():
 	print("GameController: _on_llama_server_ready вызван!")
 	llama_ready = true
+	llama_server_ready.emit()
 func _exit_tree():
 	if llama_process_id != -1:
 		OS.kill(llama_process_id)
