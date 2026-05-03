@@ -208,7 +208,7 @@ func get_or_create_location(location_id: String, description: String = "", addit
 				exit_data["target_location_id"] = next_locs[door_index]
 				door_index += 1
 		location.save()
-	_update_door_targets_from_campaign(location)
+	#_update_door_targets_from_campaign(location)
 	print("LocationManager: Новая локация создана: ", location.name, " (ID: ", location_id, ")")
 	return location
 
