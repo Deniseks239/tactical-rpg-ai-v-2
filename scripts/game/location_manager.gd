@@ -6,10 +6,20 @@ var locations: Dictionary = {}  # id -> LocationData
 const LocationParser = preload("res://scripts/game/location_parser.gd")
 
 func _ready():
-	# Создаём папку для сохранений, если её нет
-	var dir = DirAccess.open("user://")
-	if not dir.dir_exists("locations"):
-		dir.make_dir("locations")
+	# Путь к папке сохранений кампании
+	var campaign_mgr = _get_campaign_manager()
+	if campaign_mgr and campaign_mgr.has_method("get_current_save_path"):
+		# Используем папку кампании
+		var save_path = campaign_mgr.get_current_save_path()
+		if save_path:
+			var dir = DirAccess.open(save_path)
+			if not dir.dir_exists("locations"):
+				dir.make_dir("locations")
+	else:
+		# Fallback: используем старый путь
+		var dir = DirAccess.open("user://")
+		if not dir.dir_exists("locations"):
+			dir.make_dir("locations")
 
 func generate_location(description: String, additional_params: Dictionary = {}) -> LocationData:
 	# 1. Парсим описание в параметры для процедурной генерации
