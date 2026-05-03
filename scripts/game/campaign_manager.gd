@@ -114,40 +114,40 @@ func get_location_info(location_id: String) -> Dictionary:
 	if world.get("starting_location", {}).get("id") == location_id:
 		return world["starting_location"]
 	
-	# Проверяем связанные локации
-	for loc in world.get("connected_locations", []):
-		if loc.get("id") == location_id:
+	# Способ 1: массив connected_locations
+	if world.has("connected_locations") and world["connected_locations"] is Array:
+		for loc in world["connected_locations"]:
+			if loc.get("id") == location_id:
+				return loc
+	
+	# Способ 2: ключи loc_1, loc_2...
+	for key in world.keys():
+		var loc = world[key]
+		if loc is Dictionary and loc.get("id") == location_id:
 			return loc
 	
 	return {}
 
 func get_next_locations(current_location_id: String) -> Array:
 	var result = []
+	
 	if not campaign_data.has("world_structure"):
 		return result
 	
 	var world = campaign_data["world_structure"]
 	
-	# 1. Обратный путь: если мы в connected-локации, то стартовая — это выход назад
-	for loc in world.get("connected_locations", []):
-		if loc.get("id") == current_location_id:
-			result.append(world["starting_location"].get("id"))
-			break
-	
-	# 2. Путь вперёд: ищем все connected-локации, у которых connected_from == current_location_id
-	for loc in world.get("connected_locations", []):
-		if loc.get("connected_from") == current_location_id:
-			result.append(loc.get("id"))
-	
-	# Если мы в стартовой локации, добавляем все connected-локации (кроме тех, что уже в обратном пути)
-	if world.get("starting_location", {}).get("id") == current_location_id:
-		for loc in world.get("connected_locations", []):
-			if loc.get("id") not in result:
+	# Способ 1: Ищем в массиве connected_locations
+	if world.has("connected_locations") and world["connected_locations"] is Array:
+		for loc in world["connected_locations"]:
+			if loc.get("connected_from") == current_location_id:
 				result.append(loc.get("id"))
+		return result
 	
-	# Убираем возврат, если мы в стартовой (не нужен обратный путь на старте)
-	if result.size() == 1 and result[0] == world.get("starting_location", {}).get("id"):
-		result.clear()
+	# Способ 2: Ищем среди ключей loc_1, loc_2, loc_3...
+	for key in world.keys():
+		var loc = world[key]
+		if loc is Dictionary and loc.has("connected_from") and loc["connected_from"] == current_location_id:
+			result.append(loc.get("id"))
 	
 	return result
 
