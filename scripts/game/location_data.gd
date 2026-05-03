@@ -22,9 +22,10 @@ class_name LocationData
 # Позиции
 @export var player_start_x: int = 8
 @export var player_start_y: int = 8
+static var base_save_path: String = "user://locations/"
 
 func save() -> String:
-	var save_path = "user://locations/" + id + ".tres"
+	var save_path = base_save_path + id + ".tres"
 	var error = ResourceSaver.save(self, save_path)
 	if error == OK:
 		print("Локация сохранена: ", save_path)
