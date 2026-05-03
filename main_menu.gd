@@ -30,16 +30,20 @@ func _start_llama_server():
 		status_label.text = "Запуск ИИ-сервера..."
 	var gm = get_node("/root/GameControllerAuto")
 	if gm:
-		gm._start_llama_server()
-		# Ждём готовности сервера
-		while not gm.llama_ready:
-			await get_tree().create_timer(0.5).timeout
-		if status_label:
-			status_label.text = "Сервер готов"
-		server_started = true
+		if gm.llama_ready:
+			_on_server_ready()
+		else:
+			# Ждём сигнал готовности
+			gm.llama_server_ready.connect(_on_server_ready)
+			gm._start_llama_server()
 	else:
 		if status_label:
 			status_label.text = "Ошибка: GameController не найден"
+
+func _on_server_ready():
+	if status_label:
+		status_label.text = "Сервер готов"
+	server_started = true
 
 func _on_new_game_pressed():
 	if not server_started:
