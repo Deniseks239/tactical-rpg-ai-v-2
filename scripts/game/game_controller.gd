@@ -1112,3 +1112,5 @@ func _wait_for_server_ready():
 		await http.request_completed  # Ждём завершения этого конкретного запроса
 		http.queue_free()
 	print("GameController: сервер точно готов, выхожу из ожидания")
+func start_llama_server():
+	_start_llama_server()
