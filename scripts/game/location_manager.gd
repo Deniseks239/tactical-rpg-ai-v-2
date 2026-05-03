@@ -98,7 +98,7 @@ func get_or_create_location(location_id: String, description: String = "", addit
 	if existing:
 		print("LocationManager: Локация уже существует, загружаем: ", existing.name)
 		# Обновляем target_location_id из структуры кампании
-		_update_door_targets_from_campaign(existing)
+		#_update_door_targets_from_campaign(existing)
 		# Обновляем обратную дверь, если нужно
 		if additional_params.has("return_location_id") and additional_params["return_location_id"] != "":
 			_update_return_door(existing, additional_params)
