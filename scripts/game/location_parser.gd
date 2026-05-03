@@ -24,9 +24,9 @@ static func parse_location_description(description: String) -> Dictionary:
 	params["generator"] = location_info["generator"]
 	
 	if params["location_type"] == "city":
-		params["size"] = 48
-		params["width"] = 48
-		params["height"] = 48
+		params["size"] = 16
+		params["width"] = 16
+		params["height"] = 16
 	
 	var name_match = _extract_name(description)
 	if name_match:
