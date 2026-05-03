@@ -1,13 +1,13 @@
 [gd_scene format=3 uid="uid://c2qdsv155jrp4"]
 
-[ext_resource type="Script" uid="uid://bqkngc160jtpj" path="res://main_menu.gd" id="1_06t4h"]
+[ext_resource type="Script" uid="uid://bqkngc160jtpj" path="res://scenes/main_menu.gd" id="1_l6cm7"]
 
 [node name="MainMenu" type="Control" unique_id=336166975 node_paths=PackedStringArray("new_game_button", "load_button", "quit_button", "status_label", "settings_button")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
 offset_bottom = 40.0
-script = ExtResource("1_06t4h")
+script = ExtResource("1_l6cm7")
 new_game_button = NodePath("Panel/VBoxContainer/NewGameButton")
 load_button = NodePath("Panel/VBoxContainer/LoadButton")
 quit_button = NodePath("Panel/VBoxContainer/QuitButton")
@@ -20,6 +20,7 @@ offset_right = 40.0
 offset_bottom = 40.0
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Panel" unique_id=1602955488]
+custom_minimum_size = Vector2(300, 60)
 layout_mode = 1
 anchors_preset = 13
 anchor_left = 0.5
