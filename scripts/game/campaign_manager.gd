@@ -129,6 +129,7 @@ func get_location_info(location_id: String) -> Dictionary:
 	return {}
 
 func get_next_locations(current_location_id: String) -> Array:
+	"""Возвращает массив ID локаций, в которые можно попасть из текущей"""
 	var result = []
 	
 	if not campaign_data.has("world_structure"):
@@ -136,21 +137,21 @@ func get_next_locations(current_location_id: String) -> Array:
 	
 	var world = campaign_data["world_structure"]
 	
-	# Способ 1: Ищем в массиве connected_locations
+	# Проверяем connected_locations (старый формат)
 	if world.has("connected_locations") and world["connected_locations"] is Array:
 		for loc in world["connected_locations"]:
 			if loc.get("connected_from") == current_location_id:
 				result.append(loc.get("id"))
 		return result
 	
-	# Способ 2: Ищем среди ключей loc_1, loc_2, loc_3...
+	# Проверяем ключи loc_1, loc_2... (альтернативный формат)
 	for key in world.keys():
 		var loc = world[key]
 		if loc is Dictionary and loc.has("connected_from") and loc["connected_from"] == current_location_id:
 			result.append(loc.get("id"))
 	
+	# Если ничего не найдено — возвращаем пустой массив
 	return result
-
 # === РАБОТА С NPC ===
 
 func get_npc(npc_id: String) -> Dictionary:
