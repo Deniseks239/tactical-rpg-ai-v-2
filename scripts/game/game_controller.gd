@@ -331,11 +331,12 @@ func _try_generate_location_from_text(text: String) -> bool:
 	
 	var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
 	var target_loc_id = ""
-	
-	if additional_params.has("return_location_id"):
-		target_loc_id = additional_params["return_location_id"]
-	elif campaign_mgr and campaign_mgr.has_campaign():
+				
+	# Всегда генерируем новый уникальный ID для перехода без сюжетной связи
+	if campaign_mgr and campaign_mgr.has_campaign():
 		target_loc_id = "loc_" + str(text.hash())
+	else:
+		target_loc_id = "loc_" + str(randi())
 	
 	if target_loc_id != "":
 		location_manager.get_or_create_location(target_loc_id, text, {})
