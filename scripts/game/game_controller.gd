@@ -909,10 +909,6 @@ func start_with_character(character: CharacterData):
 	}
 	
 	_show_loading_screen("Запуск ИИ-сервера...")
-	_start_llama_server()
-	print("GameController: жду готовности сервера из start_with_character")
-	await _wait_for_server_ready()
-	print("GameController: сервер готов, скрываю загрузку и запрашиваю историю")
 	_hide_loading_screen()
 	_request_story_intro([character])
 func request_victory_description():
