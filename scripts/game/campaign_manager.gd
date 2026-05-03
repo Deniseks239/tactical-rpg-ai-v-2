@@ -8,7 +8,9 @@ signal npc_dialogue_received(text: String)
 signal quest_updated(quest_id: String, stage: int)
 
 const SAVE_PATH = "user://campaign_state.json"
-
+const SAVES_DIR = "user://saves/"
+var current_save_path: String = ""   # путь к папке текущей кампании
+var current_save_name: String = "save_1"
 var ai_client: Node
 var campaign_data: Dictionary = {}
 var current_dialogue_npc: Dictionary = {}
@@ -77,7 +79,7 @@ func _on_campaign_response(response: Dictionary):
 		campaign_data = parse_result
 		is_waiting_for_structure = false
 		ai_client.response_received.disconnect(_on_campaign_response)
-		_save_campaign()
+		_save_campaign("save_1")
 		print("CampaignManager: кампания создана — ", campaign_data.get("campaign_name", "Без названия"))
 		campaign_loaded.emit(campaign_data)
 	else:
@@ -238,12 +240,18 @@ func _on_dialogue_response(response: Dictionary):
 
 # === СОХРАНЕНИЕ / ЗАГРУЗКА ===
 
-func _save_campaign():
-	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify(campaign_data, "\t"))
-		file.close()
-		print("CampaignManager: кампания сохранена в ", SAVE_PATH)
+func _save_campaign(save_name: String = "save_1"):
+	if current_save_path.is_empty():
+		# Создаём папку saves, если её нет
+		DirAccess.make_dir_recursive_absolute(SAVES_DIR)
+		current_save_path = SAVES_DIR + save_name
+		DirAccess.make_dir_recursive_absolute(current_save_path)
+	
+	var campaign_file = FileAccess.open(current_save_path + "/campaign_state.json", FileAccess.WRITE)
+	if campaign_file:
+		campaign_file.store_string(JSON.stringify(campaign_data, "\t"))
+		campaign_file.close()
+		print("CampaignManager: кампания сохранена в ", current_save_path)
 	else:
 		print("CampaignManager: ошибка сохранения кампании")
 
@@ -304,3 +312,5 @@ func _fix_truncated_json(text: String) -> String:
 		open_brackets -= 1
 	
 	return result
+func get_current_save_path() -> String:
+	return current_save_path
