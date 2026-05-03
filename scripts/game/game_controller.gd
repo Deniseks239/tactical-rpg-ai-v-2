@@ -62,7 +62,6 @@ func _ready():
 	# Запускаем AI генерацию
 	#_start_game()
 	print("GameController готов. Ожидание создания персонажа.")
-	_start_llama_server()
 
 func _start_game():
 	_show_loading_screen("Мастер подземелий создаёт мир...")
@@ -1072,7 +1071,8 @@ func _start_llama_server():
 			if pid > 0:
 				llama_process_id = pid
 				print("GameController: llama-server запущен (PID: ", pid, "), ожидаю готовности...")
-				_wait_for_llama_server()
+				_wait_for_server_ready()
+				print("GameController: llama-server готов (из _start_llama_server)")
 			else:
 				printerr("GameController: Не удалось запустить llama-server. Код ошибки: ", pid)
 				_on_ai_error("Сервер ИИ не запустился")
