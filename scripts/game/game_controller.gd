@@ -314,6 +314,7 @@ func _try_generate_location_from_text(text: String) -> bool:
 		
 	print("Получено текстовое описание локации, передаём в LocationManager")
 
+	# Сохраняем параметры обратной двери ДО их сброса
 	var additional_params = {}
 	if pending_return_location_id != "":
 		additional_params = {
@@ -322,6 +323,7 @@ func _try_generate_location_from_text(text: String) -> bool:
 			"return_door_y": pending_return_door_y,
 			"previous_location": pending_previous_location
 		}
+		# Сбрасываем после использования
 		pending_return_location_id = ""
 		pending_return_door_x = 0
 		pending_return_door_y = 0
@@ -331,19 +333,22 @@ func _try_generate_location_from_text(text: String) -> bool:
 	
 	var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
 	var target_loc_id = ""
-				
-	# Всегда генерируем новый уникальный ID для перехода без сюжетной связи
+	
+	# Всегда генерируем новый уникальный ID
 	if campaign_mgr and campaign_mgr.has_campaign():
 		target_loc_id = "loc_" + str(text.hash())
 	else:
 		target_loc_id = "loc_" + str(randi())
 	
+	# Передаём параметры обратной двери в генератор
 	if target_loc_id != "":
-		location_manager.get_or_create_location(target_loc_id, text, {})
+		location_manager.get_or_create_location(target_loc_id, text, additional_params)
 	else:
 		var new_location = location_manager.generate_location(text, additional_params)
 		location_manager.set_current_location(new_location)
 	
+	# Явно скрываем экран загрузки
+	_hide_loading_screen()
 	return true
 
 func request_action_description(action_text: String, attacker: String, defender: String, damage: int, is_hit: bool):
