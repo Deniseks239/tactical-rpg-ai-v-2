@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://sxy1wpu8d13v"]
+
+[ext_resource type="Script" uid="uid://bk6fdngbf78g6" path="res://scripts/ui/mini_map.gd" id="1_l143l"]
+
+[node name="MiniMap" type="Control" unique_id=1234185343]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_l143l")
