@@ -321,7 +321,11 @@ func save_current_location_to_world_map():
 	for x in range(current_location.width):
 		var row = []
 		for y in range(current_location.height):
-			row.append(_tile_type_to_char(current_location.tiles[x][y]["type"]))
+			var tile_str = current_location.tiles[x][y]
+			if tile_str is String:
+				row.append(_tile_type_to_char(tile_str))
+			else:
+				row.append(_tile_type_to_char(tile_str.get("type", GridState.TileType.FLOOR)))
 		mini_tiles.append(row)
 	
 	# Собираем информацию о дверях и их направлениях
@@ -340,15 +344,15 @@ func save_current_location_to_world_map():
 		"name": current_location.name
 	}
 	print("LocationManager: мини-карта сохранена для ", loc_id)
-func _tile_type_to_char(tile_type) -> String:
-	match tile_type:
-		GridState.TileType.WALL: return "W"
-		GridState.TileType.FLOOR: return "."
-		GridState.TileType.GRASS: return "G"
-		GridState.TileType.DIRT: return "D"
-		GridState.TileType.WATER: return "~"
-		GridState.TileType.TABLE: return "T"
-		GridState.TileType.CHAIR: return "C"
+func _tile_type_to_char(tile_type_str: String) -> String:
+	match tile_type_str:
+		"wall": return "W"
+		"floor": return "."
+		"grass": return "G"
+		"dirt": return "D"
+		"water": return "~"
+		"table": return "T"
+		"chair": return "C"
 		_: return "."
 func add_world_connection(from_id: String, to_id: String, from_door_x: int, from_door_y: int, to_door_x: int, to_door_y: int):
 	if not world_map_data.has(from_id) or not world_map_data.has(to_id):
