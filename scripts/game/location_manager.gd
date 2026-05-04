@@ -3,6 +3,8 @@ class_name LocationManager
 
 var current_location: LocationData
 var locations: Dictionary = {}  # id -> LocationData
+# Словарь для карты мира: ключ - location_id, значение - { "tiles": [], "doors": {}, "connections": [] }
+var world_map_data: Dictionary = {}
 const LocationParser = preload("res://scripts/game/location_parser.gd")
 
 func _ready():
@@ -66,6 +68,7 @@ func generate_location(description: String, additional_params: Dictionary = {}) 
 	
 	# 6. Применяем локацию
 	set_current_location(location, Vector2i(-1, -1))
+	save_current_location_to_world_map()
 	# 7. Обновляем дверь в родительской локации, чтобы она знала ID новой локации
 	if additional_params.has("return_location_id") and additional_params["return_location_id"] != "":
 		var parent_location_id = additional_params["return_location_id"]
@@ -103,6 +106,7 @@ func get_or_create_location(location_id: String, description: String = "", addit
 		if additional_params.has("return_location_id") and additional_params["return_location_id"] != "":
 			_update_return_door(existing, additional_params)
 		set_current_location(existing, Vector2i(-1, -1))
+		save_current_location_to_world_map()
 		return existing
 	
 	# 2. Проверяем структуру кампании
@@ -304,3 +308,65 @@ func _update_door_targets_from_campaign(location: LocationData):
 	# Сохраняем обновлённую локацию
 	location.save()
 	locations[location.id] = location
+func save_current_location_to_world_map():
+	if not current_location:
+		return
+	
+	var loc_id = current_location.id
+	if world_map_data.has(loc_id):
+		return  # уже сохраняли
+	
+	# Создаём мини-карту: сжимаем tiles до 2D массива строк
+	var mini_tiles = []
+	for x in range(current_location.width):
+		var row = []
+		for y in range(current_location.height):
+			row.append(_tile_type_to_char(current_location.tiles[x][y]["type"]))
+		mini_tiles.append(row)
+	
+	# Собираем информацию о дверях и их направлениях
+	var doors_info = {}
+	for exit_data in current_location.exits:
+		var door_key = str(exit_data.get("x")) + "_" + str(exit_data.get("y"))
+		doors_info[door_key] = {
+			"target_location_id": exit_data.get("target_location_id", ""),
+			"description": exit_data.get("description", "Дверь")
+		}
+	
+	world_map_data[loc_id] = {
+		"tiles": mini_tiles,
+		"doors": doors_info,
+		"connections": [],  # сюда будем добавлять связи при переходах
+		"name": current_location.name
+	}
+	print("LocationManager: мини-карта сохранена для ", loc_id)
+func _tile_type_to_char(tile_type) -> String:
+	match tile_type:
+		GridState.TileType.WALL: return "W"
+		GridState.TileType.FLOOR: return "."
+		GridState.TileType.GRASS: return "G"
+		GridState.TileType.DIRT: return "D"
+		GridState.TileType.WATER: return "~"
+		GridState.TileType.TABLE: return "T"
+		GridState.TileType.CHAIR: return "C"
+		_: return "."
+func add_world_connection(from_id: String, to_id: String, from_door_x: int, from_door_y: int, to_door_x: int, to_door_y: int):
+	if not world_map_data.has(from_id) or not world_map_data.has(to_id):
+		return
+	
+	# Проверяем, нет ли уже такой связи
+	for conn in world_map_data[from_id]["connections"]:
+		if conn["target_id"] == to_id:
+			return
+	
+	world_map_data[from_id]["connections"].append({
+		"target_id": to_id,
+		"door_x": from_door_x,
+		"door_y": from_door_y
+	})
+	world_map_data[to_id]["connections"].append({
+		"target_id": from_id,
+		"door_x": to_door_x,
+		"door_y": to_door_y
+	})
+	print("LocationManager: связь добавлена ", from_id, " <-> ", to_id)
