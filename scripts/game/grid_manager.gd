@@ -568,6 +568,14 @@ func _enter_door(exit_data: Dictionary):
 	
 	# Ищем свободную клетку рядом с дверью для обратной двери
 	var return_pos = _find_free_adjacent_cell(door_x, door_y)
+	if return_pos.x < 0:
+		return_pos.x = 0
+	if return_pos.x >= grid_state.width:
+		return_pos.x = grid_state.width - 1
+	if return_pos.y < 0:
+		return_pos.y = 0
+	if return_pos.y >= grid_state.height:
+		return_pos.y = grid_state.height - 1
 	
 	# Сохраняем информацию для обратной двери в game_controller
 	game_controller.pending_return_location_id = current_location.id
