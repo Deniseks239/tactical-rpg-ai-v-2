@@ -62,6 +62,13 @@ func _ready():
 	# Запускаем AI генерацию
 	#_start_game()
 	print("GameController готов. Ожидание создания персонажа.")
+	# Добавляем миникарту на экран
+	var mini_canvas = CanvasLayer.new()
+	mini_canvas.layer = 128  # поверх игровой сетки
+	var mini_map = load("res://scenes/mini_map.tscn").instantiate()
+	mini_canvas.add_child(mini_map)
+	add_child(mini_canvas)
+	print("MiniMap добавлена")
 
 func _start_game():
 	_show_loading_screen("Мастер подземелий создаёт мир...")
