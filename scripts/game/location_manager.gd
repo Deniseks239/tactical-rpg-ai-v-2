@@ -374,3 +374,42 @@ func add_world_connection(from_id: String, to_id: String, from_door_x: int, from
 		"door_y": to_door_y
 	})
 	print("LocationManager: связь добавлена ", from_id, " <-> ", to_id)
+func _get_random_door_position(width: int, height: int, location_type: String = "default") -> Vector2i:
+	# Открытые локации — дверь внутри
+	if location_type in ["city", "town", "forest", "road", "park", "garden", "plaza", "market"]:
+		return _get_random_door_position_inside(width, height)
+	# Закрытые или неизвестные — дверь на границе
+	return _get_random_door_position_on_edge(width, height)
+
+func _get_random_door_position_on_edge(width: int, height: int) -> Vector2i:
+	var side = randi_range(0, 3)
+	var x = 0
+	var y = 0
+	match side:
+		0: # Север
+			x = randi_range(1, width - 2)
+			y = 0
+		1: # Восток
+			x = width - 1
+			y = randi_range(1, height - 2)
+		2: # Юг
+			x = randi_range(1, width - 2)
+			y = height - 1
+		3: # Запад
+			x = 0
+			y = randi_range(1, height - 2)
+	return Vector2i(x, y)
+
+func _get_random_door_position_inside(width: int, height: int) -> Vector2i:
+	# Пытаемся найти свободную клетку (не край, не стена) 10 раз
+	for attempt in 10:
+		var x = randi_range(1, width - 2)
+		var y = randi_range(1, height - 2)
+		if current_location and current_location.tiles.size() > x and current_location.tiles[x].size() > y:
+			var tile_type = current_location.tiles[x][y]
+			# Если клетка — стена, ищем дальше
+			if tile_type == "wall":
+				continue
+		return Vector2i(x, y)
+	# Фоллбэк — центр карты
+	return Vector2i(width / 2, height / 2)
