@@ -79,7 +79,7 @@ func _on_campaign_response(response: Dictionary):
 		campaign_data = parse_result
 		is_waiting_for_structure = false
 		ai_client.response_received.disconnect(_on_campaign_response)
-		_save_campaign("save_1")
+		_save_campaign(_generate_save_name())
 		print("CampaignManager: кампания создана — ", campaign_data.get("campaign_name", "Без названия"))
 		campaign_loaded.emit(campaign_data)
 	else:
@@ -314,3 +314,8 @@ func _fix_truncated_json(text: String) -> String:
 	return result
 func get_current_save_path() -> String:
 	return current_save_path
+func _generate_save_name() -> String:
+	var dt = Time.get_datetime_string_from_system()
+	# Заменяем двоеточия и пробелы, чтобы получился корректный путь
+	var safe_name = dt.replace(":", "-").replace("T", "_")
+	return "save_" + safe_name
