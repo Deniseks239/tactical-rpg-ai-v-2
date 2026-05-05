@@ -4,6 +4,7 @@ extends Control
 @export var load_button: Button
 @export var quit_button: Button
 @export var status_label: Label
+@export var open_folder_button: Button
 
 var server_started: bool = false
 var _poll_timer: Timer
@@ -21,6 +22,8 @@ func _ready():
 		load_button.disabled = true
 	if quit_button:
 		quit_button.pressed.connect(_on_quit_pressed)
+	if open_folder_button:
+		open_folder_button.pressed.connect(_on_open_folder_pressed)
 	
 	# Находим GameController
 	_gm = get_node("/root/GameControllerAuto")
@@ -67,3 +70,6 @@ func _on_load_pressed():
 
 func _on_quit_pressed():
 	get_tree().quit()
+func _on_open_folder_pressed():
+	var saves_path = ProjectSettings.globalize_path("user://saves")
+	OS.shell_open(saves_path)
