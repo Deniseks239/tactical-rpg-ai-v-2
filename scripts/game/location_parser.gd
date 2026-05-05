@@ -119,3 +119,30 @@ static func _extract_number_before(text: String, keyword: String) -> int:
 	if num_str != "":
 		return num_str.to_int()
 	return 1
+func _extract_exits(text: String, map_width: int, map_height: int, location_type: String = "default") -> Array:
+	var exits = []
+	if text.find("дверь") != -1 or text.find("проход") != -1:
+		var x = 0
+		var y = 0
+		if location_type in ["city", "town", "forest", "road", "park", "garden", "plaza", "market"]:
+			# Внутри карты
+			x = randi_range(1, map_width - 2)
+			y = randi_range(1, map_height - 2)
+		else:
+			# На границе
+			var side = randi_range(0, 3)
+			match side:
+				0: # Север
+					x = randi_range(1, map_width - 2)
+					y = 0
+				1: # Восток
+					x = map_width - 1
+					y = randi_range(1, map_height - 2)
+				2: # Юг
+					x = randi_range(1, map_width - 2)
+					y = map_height - 1
+				3: # Запад
+					x = 0
+					y = randi_range(1, map_height - 2)
+		exits.append({"x": x, "y": y, "description": "Проход"})
+	return exits
