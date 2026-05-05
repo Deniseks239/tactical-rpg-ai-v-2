@@ -33,7 +33,7 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 			max_tokens = 2000
 			temperature = 0.3
 		"location_text":
-			max_tokens = 400
+			max_tokens = 600
 			temperature = 0.7
 		"description", "death":
 			max_tokens = 100
@@ -103,7 +103,19 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 		error_occurred.emit("Invalid response format")
 		return
 	
-	var content = response["choices"][0]["message"]["content"]
+	var message = response["choices"][0]["message"]
+	var content = message.get("content", "")
+	
+	# Если content пуст, но есть reasoning_content, используем его
+	if content == "" and message.has("reasoning_content"):
+		content = message["reasoning_content"]
+		print("AIClient: Использую reasoning_content вместо content")
+	
+	# Если всё равно пусто — ошибка
+	if content == "":
+		print("AIClient: Пустой ответ от модели, возможно, все токены ушли на thinking")
+		error_occurred.emit("Пустой ответ от модели")
+		return
 	
 	# Удаляем markdown обрамление
 	if content.begins_with("```json"):
