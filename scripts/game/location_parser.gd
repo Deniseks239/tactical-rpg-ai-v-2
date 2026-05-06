@@ -119,9 +119,9 @@ static func _extract_number_before(text: String, keyword: String) -> int:
 	if num_str != "":
 		return num_str.to_int()
 	return 1
-func _extract_exits(text: String, map_width: int, map_height: int, location_type: String = "default") -> Array:
+static func _extract_exits(text: String, map_width: int, map_height: int, location_type: String = "default") -> Array:
 	var exits = []
-	if text.find("дверь") != -1 or text.find("проход") != -1:
+	if "дверь" in text or "проход" in text or "выход" in text or "троп" in text:
 		var x = 0
 		var y = 0
 		if location_type in ["city", "town", "forest", "road", "park", "garden", "plaza", "market"]:
@@ -132,16 +132,16 @@ func _extract_exits(text: String, map_width: int, map_height: int, location_type
 			# На границе
 			var side = randi_range(0, 3)
 			match side:
-				0: # Север
+				0:
 					x = randi_range(1, map_width - 2)
 					y = 0
-				1: # Восток
+				1:
 					x = map_width - 1
 					y = randi_range(1, map_height - 2)
-				2: # Юг
+				2:
 					x = randi_range(1, map_width - 2)
 					y = map_height - 1
-				3: # Запад
+				3:
 					x = 0
 					y = randi_range(1, map_height - 2)
 		exits.append({"x": x, "y": y, "description": "Проход"})
