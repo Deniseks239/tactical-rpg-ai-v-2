@@ -143,9 +143,11 @@ func get_or_create_location(location_id: String, description: String = "", addit
 				print("LocationManager: Добавлен сюжетный выход в ", next_id)
 	
 	# Добавляем обратный выход
+	var map_width = params.get("width", 8)
+	var map_height = params.get("height", 8)
 	if additional_params.has("return_location_id") and additional_params["return_location_id"] != "":
-		var ret_x = clamp(additional_params.get("return_door_x", 0), 0, width - 1)
-		var ret_y = clamp(additional_params.get("return_door_y", 0), 0, height - 1)
+		var ret_x = clamp(additional_params.get("return_door_x", 0), 0, map_width - 1)
+		var ret_y = clamp(additional_params.get("return_door_y", 0), 0, map_height - 1)
 		var return_door = {
 			"x": ret_x,
 			"y": ret_y,
