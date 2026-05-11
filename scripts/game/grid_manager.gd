@@ -579,8 +579,8 @@ func _enter_door(exit_data: Dictionary):
 	
 	# Сохраняем информацию для обратной двери в game_controller
 	game_controller.pending_return_location_id = current_location.id
-	game_controller.pending_return_door_x = return_pos.x
-	game_controller.pending_return_door_y = return_pos.y
+	game_controller.pending_return_door_x = clamp(return_pos.x, 0, grid_state.width - 1)
+	game_controller.pending_return_door_y = clamp(return_pos.y, 0, grid_state.height - 1)
 	game_controller.pending_previous_location = current_location.name
 	
 	# Генерируем новую локацию
