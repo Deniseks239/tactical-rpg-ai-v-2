@@ -207,6 +207,14 @@ func get_or_create_location(location_id: String, description: String = "", addit
 	location.save()
 
 	set_current_location(location, Vector2i(-1, -1))
+	# Обновляем дверь в родительской локации, чтобы она запомнила новую локацию
+	if additional_params.has("parent_door_x") and additional_params.has("parent_door_y") and additional_params.has("return_location_id"):
+		_update_parent_door_target(
+			additional_params["return_location_id"],
+			additional_params["parent_door_x"],
+			additional_params["parent_door_y"],
+			location.id
+		)
 
 	# Обновляем кэш кампании для следующих переходов
 	if campaign_mgr and campaign_mgr.has_campaign():
@@ -236,6 +244,15 @@ func _update_return_door(location: LocationData, additional_params: Dictionary):
 				exit_data["target_location_id"] = location.id
 				parent.save()
 				print("LocationManager: Обновлена дверь в ", parent_id)
+func _update_parent_door_target(parent_loc_id: String, door_x: int, door_y: int, new_loc_id: String):
+	var parent_loc = load_location(parent_loc_id)
+	if parent_loc:
+		for exit_data in parent_loc.exits:
+			if exit_data.get("x") == door_x and exit_data.get("y") == door_y:
+				exit_data["target_location_id"] = new_loc_id
+				print("LocationManager: обновлена дверь в ", parent_loc_id, " на (", door_x, ",", door_y, ") -> ", new_loc_id)
+				parent_loc.save()
+				break
 
 # Получение CampaignManager
 func _get_campaign_manager():
