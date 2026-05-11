@@ -52,43 +52,43 @@ static func get_campaign_structure_prompt(story_intro: String, character_name: S
 {
   "campaign_name": "название кампании",
   "main_quest": {
-    "title": "название главного квеста",
-    "description": "краткое описание (1-2 предложения)",
-    "stages": [
+	"title": "название главного квеста",
+	"description": "краткое описание (1-2 предложения)",
+	"stages": [
       {
-        "id": "stage_1",
-        "description": "что нужно сделать на этом этапе",
-        "location_hint": "пример места, где это может произойти (пещера, таверна, лес, подвал)",
-        "steps": [
-          { "action": "что сделать", "location_hint": "где" },
-          { "action": "что сделать дальше", "location_hint": "где" }
+		"id": "stage_1",
+		"description": "что нужно сделать на этом этапе",
+		"location_hint": "пример места, где это может произойти (пещера, таверна, лес, подвал)",
+		"steps": [
+		  { "action": "что сделать", "location_hint": "где" },
+		  { "action": "что сделать дальше", "location_hint": "где" }
         ]
       }
     ]
   },
   "npcs": [
     {
-      "id": "npc_1",
-      "name": "имя NPC",
-      "role": "торговец/трактирщик/стражник/маг",
-      "personality": "характер (1-2 фразы)",
-      "location": "где находится (стартовая локация или город)",
-      "knowledge": ["что знает 1", "что знает 2"],
-      "quests": [
+	  "id": "npc_1",
+	  "name": "имя NPC",
+	  "role": "торговец/трактирщик/стражник/маг",
+	  "personality": "характер (1-2 фразы)",
+	  "location": "где находится (стартовая локация или город)",
+	  "knowledge": ["что знает 1", "что знает 2"],
+	  "quests": [
         {
-          "title": "название побочного квеста",
-          "description": "что нужно сделать",
-          "reward": "награда"
+		  "title": "название побочного квеста",
+		  "description": "что нужно сделать",
+		  "reward": "награда"
         }
       ]
     }
   ],
   "world_structure": {
-    "starting_location": {
-      "id": "loc_start",
-      "name": "название стартовой локации",
-      "description": "краткое описание для генерации карты",
-      "biome": "tavern/forest/dungeon/cave/town"
+	"starting_location": {
+	  "id": "loc_start",
+	  "name": "название стартовой локации",
+	  "description": "краткое описание для генерации карты",
+	  "biome": "tavern/forest/dungeon/cave/town"
     }
   }
 }
