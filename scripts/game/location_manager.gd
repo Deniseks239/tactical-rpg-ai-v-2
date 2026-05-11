@@ -144,12 +144,17 @@ func get_or_create_location(location_id: String, description: String = "", addit
 	
 	# Добавляем обратный выход
 	if additional_params.has("return_location_id") and additional_params["return_location_id"] != "":
+		var ret_x = clamp(additional_params.get("return_door_x", 0), 0, width - 1)
+		var ret_y = clamp(additional_params.get("return_door_y", 0), 0, height - 1)
 		var return_door = {
-			"x": additional_params.get("return_door_x", 0),
-			"y": additional_params.get("return_door_y", 0),
+			"x": ret_x,
+			"y": ret_y,
 			"description": "Обратный проход в " + additional_params.get("previous_location", "предыдущую локацию"),
 			"target_location_id": additional_params["return_location_id"]
 		}
+		# Добавляем в params, чтобы передать в генератор
+		if not "exits" in params:
+			params["exits"] = []
 		params["exits"].append(return_door)
 	
 	var location = LocationData.new()
