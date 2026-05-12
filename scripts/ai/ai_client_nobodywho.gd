@@ -41,6 +41,9 @@ func send_request(messages: Array, game_context: Dictionary, additional_context:
 		"battle_summary":
 			max_tokens = 200
 			temperature = 0.7
+		"dialogue":
+			max_tokens = 200
+			temperature = 0.8
 	
 	var body = {
 		"model": model_name,
