@@ -157,23 +157,25 @@ func get_or_create_location(location_id: String, description: String = "", addit
 		if not "exits" in params:
 			params["exits"] = []
 		params["exits"].append(return_door)
-	# Если парсер не создал ни одного выхода – добавляем стандартный
-	if params.get("exits", []).is_empty():
-		params["exits"] = [{
-			"x": 7,
-			"y": 4,
-			"description": "Тёмный проход",
+	# Если после добавления обратной двери у нас только один выход — добавляем дверь вперёд
+	if params["exits"].size() == 1:
+		# Получаем координаты обратной двери, чтобы не поставить новую на то же место
+		var back_door = params["exits"][0]
+		var back_x = back_door.get("x", -1)
+		var back_y = back_door.get("y", -1)
+		
+		var door_pos = _get_random_door_position(map_width, map_height, params.get("location_type", "default"))
+		# Если случайно попали на ту же клетку – повторяем, пока не разойдутся
+		while door_pos.x == back_x and door_pos.y == back_y:
+			door_pos = _get_random_door_position(map_width, map_height, params.get("location_type", "default"))
+		
+		params["exits"].append({
+			"x": door_pos.x,
+			"y": door_pos.y,
+			"description": "Тёмный проход вперёд",
 			"target_location_id": ""
-		}]
-		print("LocationManager: добавлен выход по умолчанию")
-		# Если совсем нет выходов (например, ошибка в обратной двери) – добавляем стандартную
-		params["exits"] = [{
-			"x": 7,
-			"y": 4,
-			"description": "Тёмный проход",
-			"target_location_id": ""
-		}]
-		print("LocationManager: добавлен выход по умолчанию (не было ни одного)")
+		})
+		print("LocationManager: добавлен выход вперёд на (", door_pos.x, ",", door_pos.y, ")")
 	
 	var location = LocationData.new()
 	location.id = location_id
