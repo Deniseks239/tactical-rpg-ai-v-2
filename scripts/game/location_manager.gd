@@ -342,9 +342,10 @@ func _apply_location_to_game(location: LocationData, entry_door_pos: Vector2i = 
 		# Добавляем NPC как юнитов (не врагов)
 		for npc in location.npcs:
 			var unit_id = "npc_" + str(randi())
+			var pos_key = str(npc.x) + "_" + str(npc.y)
 			game_controller.grid_state.set_unit(unit_id, npc.name, "npc", npc.x, npc.y)
-			if npc.has("npc_id"):
-				var pos_key = str(npc.x) + "_" + str(npc.y)
+			# Сохраняем npc_id, чтобы диалог мог найти его в кампании
+			if npc.has("npc_id") and game_controller.grid_state.units.has(pos_key):
 				game_controller.grid_state.units[pos_key]["npc_id"] = npc["npc_id"]
 func _update_door_targets_from_campaign(location: LocationData):
 	var campaign_mgr = _get_campaign_manager()
