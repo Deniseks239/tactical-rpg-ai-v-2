@@ -831,21 +831,21 @@ func _talk_to_unit(unit_data: Dictionary):
 	var unit_name = unit_data.get("name", "Неизвестный")
 	print("Попытка поговорить с ", unit_name)
 	
-	# Если это NPC — пробуем найти его в структуре кампании
-	var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
-	if campaign_mgr and campaign_mgr.has_campaign():
-		var npc_id = campaign_mgr.get_npc_by_name(unit_name)
-		if npc_id:
-			print("Найден NPC в кампании: ", npc_id)
-			game_controller.game_message.emit("Вы обращаетесь к " + unit_name + "...")
-			# TODO: открыть диалоговое окно
-			return
+	# Получаем campaign npc_id
+	var pos = grid_state.get_unit_position(unit_data["id"])
+	var pos_key = str(pos.x) + "_" + str(pos.y)
+	var npc_id = ""
+	if grid_state.units.has(pos_key) and grid_state.units[pos_key].has("npc_id"):
+		npc_id = grid_state.units[pos_key]["npc_id"]
 	
-	# Если это враг
-	if unit_data.get("type") == "enemy":
-		game_controller.game_message.emit(unit_name + " рычит в ответ. Он не настроен на разговор.")
+	var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
+	if campaign_mgr and npc_id != "":
+		game_controller.game_message.emit("*Вы обращаетесь к " + unit_name + "*")
+		# Подписываемся на ответ и отправляем запрос
+		campaign_mgr.npc_dialogue_received.connect(_on_npc_dialogue_received, CONNECT_ONE_SHOT)
+		campaign_mgr.request_npc_dialogue(npc_id, "")
 	else:
-		game_controller.game_message.emit(unit_name + " не отвечает.")
+		game_controller.game_message.emit(unit_name + " молча смотрит на вас.")
 
 func _examine_cell(x: int, y: int, tile_type, unit_data):
 	var description = "Вы осматриваетесь... "
@@ -918,3 +918,5 @@ func _find_free_adjacent_cell_for_door(player_pos: Vector2i, door_pos: Vector2i)
 						best_cell = Vector2i(nx, ny)
 	
 	return best_cell
+func _on_npc_dialogue_received(text: String):
+	game_controller.game_message.emit(text)
