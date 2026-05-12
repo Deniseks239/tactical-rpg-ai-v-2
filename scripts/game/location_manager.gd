@@ -125,6 +125,20 @@ func get_or_create_location(location_id: String, description: String = "", addit
 	# 4. Генерируем новую локацию
 	var params = LocationParser.parse_location_description(description)
 	params["id"] = location_id  # Принудительно задаём ID из структуры
+	# Добавляем NPC из структуры кампании для стартовой локации
+	if campaign_mgr and campaign_mgr.has_campaign():
+		var start_loc_id = campaign_mgr.campaign_data.get("world_structure", {}).get("starting_location", {}).get("id", "")
+		if start_loc_id == location_id:
+			var all_npcs = campaign_mgr.campaign_data.get("npcs", [])
+			for npc in all_npcs:
+				params["npcs"].append({
+					"name": npc.get("name", "NPC"),
+					"role": npc.get("role", ""),
+					"x": -1,
+					"y": -1,
+					"npc_id": npc.get("id", "")
+				})
+			print("LocationManager: добавлены NPC из кампании в стартовую локацию")
 	# Добавляем сюжетные двери из структуры мира
 	if campaign_mgr and campaign_mgr.has_campaign():
 		var next_locations = campaign_mgr.get_next_locations(location_id)
