@@ -123,11 +123,7 @@ static func get_story_intro_prompt(characters: Array) -> String:
 Пиши сразу текст, без разделителей и заголовков.
 """ % chars_desc
 static func get_generic_npc_prompt(npc_name: String, npc_gender: String, location_description: String, player_name: String, player_message: String) -> String:
-	return """
-Ты — NPC в RPG. Твоё имя: %s. Твой пол: %s.
-Ты находишься в локации: %s
-Ты обычный житель, знаешь местные слухи и окружение.
-Игрок %s обратился к тебе: "%s"
-Ответь кратко, 1-3 предложения от лица персонажа, на русском языке.
-Не используй JSON.
-""" % [npc_name, npc_gender, location_description, player_name, player_message]
+	return """Ты — NPC по имени %s (%s). Ты находишься в локации: %s.
+К тебе обратился игрок %s.
+Твоя задача — дать короткий ответ от лица этого персонажа (1-3 предложения на русском).
+Не используй JSON. Не размышляй вслух. Отвечай сразу.""" % [npc_name, npc_gender, location_description, player_name]
