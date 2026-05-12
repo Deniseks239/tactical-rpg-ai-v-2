@@ -131,11 +131,14 @@ func get_or_create_location(location_id: String, description: String = "", addit
 		if start_loc_id == location_id:
 			var all_npcs = campaign_mgr.campaign_data.get("npcs", [])
 			for npc in all_npcs:
+				# Ищем свободную клетку для NPC
+				var nx = randi_range(1, params.get("width", 8) - 2)
+				var ny = randi_range(1, params.get("height", 8) - 2)
 				params["npcs"].append({
 					"name": npc.get("name", "NPC"),
 					"role": npc.get("role", ""),
-					"x": -1,
-					"y": -1,
+					"x": nx,
+					"y": ny,
 					"npc_id": npc.get("id", "")
 				})
 			print("LocationManager: добавлены NPC из кампании в стартовую локацию")
@@ -171,8 +174,14 @@ func get_or_create_location(location_id: String, description: String = "", addit
 		if not "exits" in params:
 			params["exits"] = []
 		params["exits"].append(return_door)
-	# Если после добавления обратной двери у нас только один выход — добавляем дверь вперёд
-	if params["exits"].size() == 1:
+	# Считаем количество выходов, которые не являются обратными (у них пустой target_location_id)
+	var forward_exits = 0
+	for e in params.get("exits", []):
+		if e.get("target_location_id", "") == "":
+			forward_exits += 1
+	
+	# Если нет ни одной двери вперёд – добавляем
+	if forward_exits == 0:
 		# Получаем координаты обратной двери, чтобы не поставить новую на то же место
 		var back_door = params["exits"][0]
 		var back_x = back_door.get("x", -1)
