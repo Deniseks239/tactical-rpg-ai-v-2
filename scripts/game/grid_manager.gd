@@ -210,6 +210,14 @@ func _create_grid():
 					hp_label.position = rect.position + Vector2(20, 40)
 					hp_label.add_theme_font_size_override("font_size", 12)
 					add_child(hp_label)
+					
+					# Цветной квадрат для NPC
+					if unit["type"] == "npc":
+						var npc_marker = ColorRect.new()
+						npc_marker.size = Vector2(grid_state.cell_size / 2, grid_state.cell_size / 2)
+						npc_marker.position = rect.position
+						npc_marker.color = Color(0.2, 0.8, 0.2, 0.8)  # зелёный
+						add_child(npc_marker)
 	
 	# ===== ОТРИСОВКА ДВЕРЕЙ ПОВЕРХ ВСЕГО =====
 	if "doors" in grid_state and grid_state.doors is Dictionary:
