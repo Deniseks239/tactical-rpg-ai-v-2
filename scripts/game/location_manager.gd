@@ -207,14 +207,24 @@ func get_or_create_location(location_id: String, description: String = "", addit
 	location.save()
 
 	set_current_location(location, Vector2i(-1, -1))
-	# Обновляем дверь в родительской локации, чтобы она запомнила новую локацию
-	if additional_params.has("parent_door_x") and additional_params.has("parent_door_y") and additional_params.has("return_location_id"):
-		_update_parent_door_target(
-			additional_params["return_location_id"],
-			additional_params["parent_door_x"],
-			additional_params["parent_door_y"],
-			location.id
-		)
+	# Обновляем дверь в родительской локации по ключу
+	var gc = Engine.get_main_loop().root.get_node("GameControllerAuto")
+	if gc and gc.pending_parent_door_key != "" and gc.pending_parent_location_id != "":
+		var parent_loc = load_location(gc.pending_parent_location_id)
+		if parent_loc:
+			# Ищем дверь по координатному ключу в grid_state
+			var door_key = gc.pending_parent_door_key
+			var door_x = int(door_key.split("_")[0])
+			var door_y = int(door_key.split("_")[1])
+			for exit_data in parent_loc.exits:
+				if exit_data.get("x") == door_x and exit_data.get("y") == door_y:
+					exit_data["target_location_id"] = location.id
+					parent_loc.save()
+					print("LocationManager: обновлён target_location_id у двери (", door_x, ",", door_y, ") в ", gc.pending_parent_location_id, " -> ", location.id)
+					break
+		# Очищаем временные переменные
+		gc.pending_parent_door_key = ""
+		gc.pending_parent_location_id = ""
 
 	# Обновляем кэш кампании для следующих переходов
 	if campaign_mgr and campaign_mgr.has_campaign():
