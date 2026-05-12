@@ -125,21 +125,6 @@ func get_or_create_location(location_id: String, description: String = "", addit
 	# 4. Генерируем новую локацию
 	var params = LocationParser.parse_location_description(description)
 	params["id"] = location_id  # Принудительно задаём ID из структуры
-	# Добавляем NPC из структуры кампании для стартовой локации
-	if campaign_mgr and campaign_mgr.has_campaign():
-		var start_loc_id = campaign_mgr.campaign_data.get("world_structure", {}).get("starting_location", {}).get("id", "")
-		if start_loc_id == location_id:
-			var all_npcs = campaign_mgr.campaign_data.get("npcs", [])
-			for npc in all_npcs:
-				params["npcs"].append({
-					"name": npc.get("name", "NPC"),
-					"role": npc.get("role", ""),
-					"x": -1,
-					"y": -1,
-					"npc_id": npc.get("id", "")
-				})
-			print("LocationManager: добавлены NPC из кампании в стартовую локацию")
-	
 	# Добавляем сюжетные двери из структуры мира
 	if campaign_mgr and campaign_mgr.has_campaign():
 		var next_locations = campaign_mgr.get_next_locations(location_id)
@@ -172,18 +157,15 @@ func get_or_create_location(location_id: String, description: String = "", addit
 		if not "exits" in params:
 			params["exits"] = []
 		params["exits"].append(return_door)
-	
-	# Если после добавления обратной двери у нас только один выход (обратный) – добавляем дверь вперёд
-	if params.get("exits", []).size() == 1:
-		var door_pos = _get_random_door_position(map_width, map_height, params.get("location_type", "default"))
-		params["exits"].append({
-			"x": door_pos.x,
-			"y": door_pos.y,
-			"description": "Тёмный проход вперёд",
+	# Если парсер не создал ни одного выхода – добавляем стандартный
+	if params.get("exits", []).is_empty():
+		params["exits"] = [{
+			"x": 7,
+			"y": 4,
+			"description": "Тёмный проход",
 			"target_location_id": ""
-		})
-		print("LocationManager: добавлен выход вперёд на (", door_pos.x, ",", door_pos.y, ")")
-	elif params.get("exits", []).is_empty():
+		}]
+		print("LocationManager: добавлен выход по умолчанию")
 		# Если совсем нет выходов (например, ошибка в обратной двери) – добавляем стандартную
 		params["exits"] = [{
 			"x": 7,
