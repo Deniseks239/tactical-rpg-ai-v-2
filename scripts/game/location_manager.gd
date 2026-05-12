@@ -159,21 +159,33 @@ func get_or_create_location(location_id: String, description: String = "", addit
 			params["exits"] = []
 		params["exits"].append(return_door)
 	
-	var location = LocationData.new()
-	location.id = location_id
-	location.name = params.get("location_name", "Неизвестная локация")
-	location.description = description
-	location.parent_location_id = params.get("parent_location_id", "")
-	location.door_id = params.get("door_id", "")
-	# Если парсер не создал ни одного выхода – добавляем стандартный
-	if params.get("exits", []).is_empty():
+	# Если после добавления обратной двери у нас только один выход (обратный) – добавляем дверь вперёд
+	if params.get("exits", []).size() == 1:
+		var door_pos = _get_random_door_position(map_width, map_height, params.get("location_type", "default"))
+		params["exits"].append({
+			"x": door_pos.x,
+			"y": door_pos.y,
+			"description": "Тёмный проход вперёд",
+			"target_location_id": ""
+		})
+		print("LocationManager: добавлен выход вперёд на (", door_pos.x, ",", door_pos.y, ")")
+	elif params.get("exits", []).is_empty():
+		# Если совсем нет выходов (например, ошибка в обратной двери) – добавляем стандартную
 		params["exits"] = [{
 			"x": 7,
 			"y": 4,
 			"description": "Тёмный проход",
 			"target_location_id": ""
 		}]
-		print("LocationManager: добавлен выход по умолчанию")
+		print("LocationManager: добавлен выход по умолчанию (не было ни одного)")
+	
+	var location = LocationData.new()
+	location.id = location_id
+	location.name = params.get("location_name", "Неизвестная локация")
+	location.description = description
+	location.parent_location_id = params.get("parent_location_id", "")
+	location.door_id = params.get("door_id", "")
+	
 	var map_data = ProceduralMap.generate(params)
 	location.tiles = map_data.get("tiles", [])
 	location.heights = map_data.get("heights", [])
