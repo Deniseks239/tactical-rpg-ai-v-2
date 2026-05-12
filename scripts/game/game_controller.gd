@@ -24,6 +24,8 @@ var loading_screen: CanvasLayer = null
 var story_intro: String = ""
 var llama_process_id: int = -1
 var llama_ready: bool = false
+var pending_parent_door_key: String = ""
+var pending_parent_location_id: String = ""
 
 
 
