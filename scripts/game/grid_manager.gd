@@ -596,7 +596,8 @@ func _enter_door(exit_data: Dictionary):
 		"parent_door_x": door_x,
 		"parent_door_y": door_y
 	}
-	
+	game_controller.pending_parent_door_key = str(door_x) + "_" + str(door_y)
+	game_controller.pending_parent_location_id = current_location.id
 	game_controller.request_location_generation(door_info)
 func _show_all_walkable_cells(unit_id: String):
 	_clear_highlight()
