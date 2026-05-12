@@ -846,12 +846,37 @@ func _talk_to_unit(unit_data: Dictionary):
 		npc_id = grid_state.units[pos_key]["npc_id"]
 	
 	var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
+	
 	if campaign_mgr and npc_id != "":
+		# Сюжетный NPC
 		game_controller.game_message.emit("*Вы обращаетесь к " + unit_name + "*")
 		campaign_mgr.npc_dialogue_received.connect(_on_npc_dialogue_received, CONNECT_ONE_SHOT)
 		campaign_mgr.request_npc_dialogue(npc_id, "")
 	else:
-		game_controller.game_message.emit(unit_name + " молча смотрит на вас.")
+		# Обычный житель
+		_talk_to_generic_npc(unit_name, pos_key)
+
+func _talk_to_generic_npc(npc_name: String, pos_key: String):
+	var location_mgr = get_node("/root/LocationManagerAuto")
+	var location_desc = "неизвестная местность"
+	if location_mgr and location_mgr.current_location:
+		location_desc = location_mgr.current_location.description
+	
+	var player_name = game_controller.current_player_name
+	var gender = "неизвестен"
+	if npc_name.ends_with("а") or npc_name.ends_with("я") or npc_name.ends_with("ль"):
+		gender = "женский"
+	else:
+		gender = "мужской"
+	
+	var prompt = PromptTemplatesAuto.get_generic_npc_prompt(npc_name, gender, location_desc, player_name, "")
+	game_controller.ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "dialogue")
+	game_controller.ai_client.response_received.connect(_on_generic_npc_response, CONNECT_ONE_SHOT)
+	game_controller.game_message.emit("*Вы обращаетесь к " + npc_name + "*")
+
+func _on_generic_npc_response(response: Dictionary):
+	if response.get("type") == "text":
+		game_controller.game_message.emit(response["data"])
 
 func _examine_cell(x: int, y: int, tile_type, unit_data):
 	var description = "Вы осматриваетесь... "
