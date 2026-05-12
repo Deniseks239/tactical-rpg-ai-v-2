@@ -831,7 +831,6 @@ func _talk_to_unit(unit_data: Dictionary):
 	var unit_name = unit_data.get("name", "Неизвестный")
 	print("Попытка поговорить с ", unit_name)
 	
-	# Получаем campaign npc_id
 	var pos = grid_state.get_unit_position(unit_data["id"])
 	var pos_key = str(pos.x) + "_" + str(pos.y)
 	var npc_id = ""
@@ -841,7 +840,6 @@ func _talk_to_unit(unit_data: Dictionary):
 	var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
 	if campaign_mgr and npc_id != "":
 		game_controller.game_message.emit("*Вы обращаетесь к " + unit_name + "*")
-		# Подписываемся на ответ и отправляем запрос
 		campaign_mgr.npc_dialogue_received.connect(_on_npc_dialogue_received, CONNECT_ONE_SHOT)
 		campaign_mgr.request_npc_dialogue(npc_id, "")
 	else:
