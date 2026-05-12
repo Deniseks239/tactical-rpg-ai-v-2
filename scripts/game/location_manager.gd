@@ -125,6 +125,20 @@ func get_or_create_location(location_id: String, description: String = "", addit
 	# 4. Генерируем новую локацию
 	var params = LocationParser.parse_location_description(description)
 	params["id"] = location_id  # Принудительно задаём ID из структуры
+	# Добавляем NPC из структуры кампании для стартовой локации
+	if campaign_mgr and campaign_mgr.has_campaign():
+		var start_loc_id = campaign_mgr.campaign_data.get("world_structure", {}).get("starting_location", {}).get("id", "")
+		if start_loc_id == location_id:
+			var all_npcs = campaign_mgr.campaign_data.get("npcs", [])
+			for npc in all_npcs:
+				params["npcs"].append({
+					"name": npc.get("name", "NPC"),
+					"role": npc.get("role", ""),
+					"x": -1,
+					"y": -1,
+					"npc_id": npc.get("id", "")
+				})
+			print("LocationManager: добавлены NPC из кампании в стартовую локацию")
 	
 	# Добавляем сюжетные двери из структуры мира
 	if campaign_mgr and campaign_mgr.has_campaign():
@@ -320,9 +334,11 @@ func _apply_location_to_game(location: LocationData, entry_door_pos: Vector2i = 
 		
 		# Добавляем NPC как юнитов (не врагов)
 		for npc in location.npcs:
-			var npc_id = "npc_" + str(randi())
-			game_controller.grid_state.set_unit(npc_id, npc.name, "npc", npc.x, npc.y)
-			# NPC не добавляем в боевую систему
+			var unit_id = "npc_" + str(randi())
+			game_controller.grid_state.set_unit(unit_id, npc.name, "npc", npc.x, npc.y)
+			if npc.has("npc_id"):
+				var pos_key = str(npc.x) + "_" + str(npc.y)
+				game_controller.grid_state.units[pos_key]["npc_id"] = npc["npc_id"]
 func _update_door_targets_from_campaign(location: LocationData):
 	var campaign_mgr = _get_campaign_manager()
 	if not campaign_mgr or not campaign_mgr.has_campaign():
