@@ -183,9 +183,12 @@ func get_or_create_location(location_id: String, description: String = "", addit
 	# Если нет ни одной двери вперёд – добавляем
 	if forward_exits == 0:
 		# Получаем координаты обратной двери, чтобы не поставить новую на то же место
-		var back_door = params["exits"][0]
-		var back_x = back_door.get("x", -1)
-		var back_y = back_door.get("y", -1)
+		var back_x = -1
+		var back_y = -1
+		if params.get("exits", []).size() > 0:
+			var back_door = params["exits"][0]
+			back_x = back_door.get("x", -1)
+			back_y = back_door.get("y", -1)
 		
 		var door_pos = _get_random_door_position(map_width, map_height, params.get("location_type", "default"))
 		# Если случайно попали на ту же клетку – повторяем, пока не разойдутся
