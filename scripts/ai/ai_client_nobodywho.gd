@@ -109,10 +109,23 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	var message = response["choices"][0]["message"]
 	var content = message.get("content", "")
 	
-	# Если content пуст, но есть reasoning_content, используем его
+	# Если content пуст, но есть reasoning_content, извлекаем финальную реплику
 	if content == "" and message.has("reasoning_content"):
-		content = message["reasoning_content"]
-		print("AIClient: Использую reasoning_content вместо content")
+		var reasoning = message["reasoning_content"]
+		# Ищем последний осмысленный блок (русский текст после последнего перевода строки)
+		var lines = reasoning.split("\n")
+		for i in range(lines.size() - 1, -1, -1):
+			var line = lines[i].strip_edges()
+			if line != "" and not line.begins_with("*") and not line.begins_with("Final") and not line.begins_with("Draft"):
+				content = line
+				break
+		if content == "":
+			# Берём последнюю непустую строку
+			for i in range(lines.size() - 1, -1, -1):
+				if lines[i].strip_edges() != "":
+					content = lines[i].strip_edges()
+					break
+		print("AIClient: Извлечён ответ из reasoning_content: ", content.substr(0, 100))
 	
 	# Если всё равно пусто — ошибка
 	if content == "":
