@@ -8,6 +8,7 @@ var selected_unit_id: String = ""
 var available_moves: Array = []
 var _pending_kill: String = ""
 var _is_dragging: bool = false
+var npc_memory: Dictionary = {}  # ключ – имя NPC, значение – массив сообщений
 var _drag_start: Vector2
 var _camera_initialized: bool = false
 var target_scale: float = 1.0
@@ -879,14 +880,35 @@ func _talk_to_generic_npc(npc_name: String, pos_key: String):
 	else:
 		gender = "мужской"
 	
-	var prompt = PromptTemplatesAuto.get_generic_npc_prompt(npc_name, gender, location_desc, player_name, "")
+	# Загружаем память NPC
+	if not npc_memory.has(npc_name):
+		npc_memory[npc_name] = []
+	var memory = npc_memory[npc_name]
+	
+	# Формируем историю диалога (последние 4 сообщения)
+	var history_text = ""
+	for entry in memory:
+		history_text += "%s: %s\n" % [entry["speaker"], entry["text"]]
+	
+	var prompt = PromptTemplatesAuto.get_generic_npc_prompt_with_memory(
+		npc_name, gender, location_desc, player_name, history_text, ""
+	)
 	game_controller.ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "dialogue")
-	game_controller.ai_client.response_received.connect(_on_generic_npc_response, CONNECT_ONE_SHOT)
+	game_controller.ai_client.response_received.connect(_on_generic_npc_response.bind(npc_name), CONNECT_ONE_SHOT)
 	game_controller.game_message.emit("*Вы обращаетесь к " + npc_name + "*")
 
-func _on_generic_npc_response(response: Dictionary):
+func _on_generic_npc_response(response: Dictionary, npc_name: String):
 	if response.get("type") == "text":
-		game_controller.game_message.emit(response["data"])
+		var text = response["data"].strip_edges()
+		# Убираем кавычки, если модель их добавила
+		if text.begins_with('"') and text.ends_with('"'):
+			text = text.substr(1, text.length() - 2)
+		# Сохраняем в память
+		if not npc_memory.has(npc_name):
+			npc_memory[npc_name] = []
+		npc_memory[npc_name].append({"speaker": npc_name, "text": text})
+		# Показываем ответ
+		game_controller.game_message.emit(text)
 
 func _examine_cell(x: int, y: int, tile_type, unit_data):
 	var description = "Вы осматриваетесь... "
