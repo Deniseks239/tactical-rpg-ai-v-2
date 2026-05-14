@@ -9,9 +9,11 @@ var available_moves: Array = []
 var _pending_kill: String = ""
 var _is_dragging: bool = false
 var npc_memory: Dictionary = {}  # ключ – имя NPC, значение – массив сообщений
+var dialog_window = null
 var _drag_start: Vector2
 var _camera_initialized: bool = false
 var target_scale: float = 1.0
+
 
 func _ready():
 	print("GridManager _ready called")
@@ -840,32 +842,21 @@ func _talk_to_unit(unit_data: Dictionary):
 	var unit_name = unit_data.get("name", "Неизвестный")
 	print("Попытка поговорить с ", unit_name)
 	
+	# Получаем npc_id
 	var pos = grid_state.get_unit_position(unit_data["id"])
 	var pos_key = str(pos.x) + "_" + str(pos.y)
 	var npc_id = ""
-	var player_pos = grid_state.get_unit_position("player_1")
-	var npc_pos = grid_state.get_unit_position(unit_data["id"])
-	var distance = max(abs(player_pos.x - npc_pos.x), abs(player_pos.y - npc_pos.y))
-	if distance > 1:
-		var target_cell = _find_free_adjacent_cell(npc_pos.x, npc_pos.y)
-		if target_cell != Vector2i(-1, -1):
-			grid_state.remove_unit("player_1")
-			grid_state.set_unit("player_1", game_controller.current_player_name, "player", target_cell.x, target_cell.y)
-			refresh_grid()
-			_update_highlight()
 	if grid_state.units.has(pos_key) and grid_state.units[pos_key].has("npc_id"):
 		npc_id = grid_state.units[pos_key]["npc_id"]
 	
-	var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
+	# Загружаем сцену диалога, если ещё не загружена
+	if dialog_window == null:
+		var dialog_scene = load("res://scenes/dialog_window.tscn")
+		dialog_window = dialog_scene.instantiate()
+		get_tree().current_scene.add_child(dialog_window)
 	
-	if campaign_mgr and npc_id != "":
-		# Сюжетный NPC
-		game_controller.game_message.emit("*Вы обращаетесь к " + unit_name + "*")
-		campaign_mgr.npc_dialogue_received.connect(_on_npc_dialogue_received, CONNECT_ONE_SHOT)
-		campaign_mgr.request_npc_dialogue(npc_id, "")
-	else:
-		# Обычный житель
-		_talk_to_generic_npc(unit_name, pos_key)
+	dialog_window.setup(unit_name, npc_id, self)
+	dialog_window.show()
 
 func _talk_to_generic_npc(npc_name: String, pos_key: String):
 	var location_mgr = get_node("/root/LocationManagerAuto")
@@ -900,15 +891,15 @@ func _talk_to_generic_npc(npc_name: String, pos_key: String):
 func _on_generic_npc_response(response: Dictionary, npc_name: String):
 	if response.get("type") == "text":
 		var text = response["data"].strip_edges()
-		# Убираем кавычки, если модель их добавила
 		if text.begins_with('"') and text.ends_with('"'):
 			text = text.substr(1, text.length() - 2)
-		# Сохраняем в память
 		if not npc_memory.has(npc_name):
 			npc_memory[npc_name] = []
 		npc_memory[npc_name].append({"speaker": npc_name, "text": text})
-		# Показываем ответ
-		game_controller.game_message.emit(text)
+		if dialog_window and dialog_window.visible:
+			dialog_window.append_npc_response(text)
+		else:
+			game_controller.game_message.emit(text)
 
 func _examine_cell(x: int, y: int, tile_type, unit_data):
 	var description = "Вы осматриваетесь... "
@@ -981,5 +972,56 @@ func _find_free_adjacent_cell_for_door(player_pos: Vector2i, door_pos: Vector2i)
 						best_cell = Vector2i(nx, ny)
 	
 	return best_cell
-func _on_npc_dialogue_received(text: String):
-	game_controller.game_message.emit(text)
+
+func _on_npc_dialogue_received(text: String, npc_name: String = ""):
+	if dialog_window and dialog_window.visible:
+		dialog_window.append_npc_response(text)
+	else:
+		game_controller.game_message.emit(text)
+
+func send_dialogue_message(message: String, npc_name: String):
+	var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
+	
+	# Ищем npc_id для этого имени
+	var npc_id = ""
+	for pos_key in grid_state.units:
+		var unit = grid_state.units[pos_key]
+		if unit.get("name") == npc_name and unit.has("npc_id"):
+			npc_id = unit["npc_id"]
+			break
+	
+	if campaign_mgr and npc_id != "":
+		# Сюжетный NPC
+		campaign_mgr.npc_dialogue_received.connect(_on_npc_dialogue_received.bind(npc_name), CONNECT_ONE_SHOT)
+		campaign_mgr.request_npc_dialogue(npc_id, message)
+	else:
+		# Обычный житель
+		_talk_to_generic_npc_with_message(npc_name, message)
+
+func _talk_to_generic_npc_with_message(npc_name: String, message: String):
+	var location_mgr = get_node("/root/LocationManagerAuto")
+	var location_desc = "неизвестная местность"
+	if location_mgr and location_mgr.current_location:
+		location_desc = location_mgr.current_location.description
+	
+	var player_name = game_controller.current_player_name
+	var gender = "неизвестен"
+	if npc_name.ends_with("а") or npc_name.ends_with("я") or npc_name.ends_with("ль"):
+		gender = "женский"
+	else:
+		gender = "мужской"
+	
+	if not npc_memory.has(npc_name):
+		npc_memory[npc_name] = []
+	var memory = npc_memory[npc_name]
+	
+	var history_text = ""
+	for entry in memory:
+		history_text += "%s: %s\n" % [entry["speaker"], entry["text"]]
+	
+	var prompt = PromptTemplatesAuto.get_generic_npc_prompt_with_memory(
+		npc_name, gender, location_desc, player_name, history_text, message
+	)
+	game_controller.ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "dialogue")
+	game_controller.ai_client.response_received.connect(_on_generic_npc_response.bind(npc_name), CONNECT_ONE_SHOT)
+	game_controller.game_message.emit("*Вы обращаетесь к " + npc_name + "*")
