@@ -4,6 +4,7 @@ extends Control
 @onready var history_label: RichTextLabel = $Panel/VBoxContainer/ScrollContainer/HistoryLabel
 @onready var input_field: LineEdit = $Panel/VBoxContainer/HBoxContainer/InputField
 @onready var send_button: Button = $Panel/VBoxContainer/HBoxContainer/SendButton
+@onready var close_button: Button = $Panel/VBoxContainer/HBoxContainer/CloseButton
 
 var npc_name: String = ""
 var npc_id: String = ""
@@ -11,8 +12,9 @@ var grid_manager = null
 
 func _ready():
 	send_button.pressed.connect(_on_send_pressed)
+	close_button.pressed.connect(_on_close_pressed)
 	input_field.text_submitted.connect(_on_send_pressed)
-	hide()  # скрыто до вызова setup
+	hide()
 
 func setup(n_name: String, n_id: String, grid_mgr):
 	npc_name = n_name
@@ -31,7 +33,7 @@ func _on_send_pressed(text: String = ""):
 	
 	history_label.append_text("[color=cyan]Вы:[/color] %s\n" % message)
 	input_field.clear()
-	input_field.editable = false  # ждём ответа
+	input_field.editable = false
 	send_button.disabled = true
 	
 	if grid_manager:
@@ -39,7 +41,11 @@ func _on_send_pressed(text: String = ""):
 
 func append_npc_response(text: String):
 	history_label.append_text("[color=green]%s:[/color] %s\n" % [npc_name, text])
-	# Снова разрешаем ввод
 	input_field.editable = true
 	send_button.disabled = false
 	input_field.grab_focus()
+
+func _on_close_pressed():
+	if grid_manager:
+		grid_manager.dialog_window = null
+	queue_free()
