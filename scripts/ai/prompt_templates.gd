@@ -132,7 +132,10 @@ static func get_generic_npc_prompt_with_memory(npc_name: String, npc_gender: Str
 	var base = """Ты — NPC %s (%s). Локация: %s.
 Игрок %s обратился к тебе.""" % [npc_name, npc_gender, location_description, player_name]
 	if history_text != "":
-		base += "\n\nИстория вашего разговора:\n" + history_text + "\nПродолжи диалог."
+		base += "\n\nИстория вашего разговора:\n" + history_text
+		if player_message != "":
+			base += "\nИгрок сказал: " + player_message
+		base += "\nОтветь на последнюю реплику игрока, продолжив диалог."
 	else:
 		base += "\nОтветь коротко (1-2 предложения) на русском от лица персонажа."
 	return base
