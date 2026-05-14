@@ -51,9 +51,11 @@ static func parse_location_description(description: String) -> Dictionary:
 	
 	# 5. Парсим NPC
 	var npc_list = ["крестьян", "торговец", "житель", "стражник", "трактирщик", "посетител"]
+	var npc_types_pool = ["commoner", "commoner", "guard", "trader", "child"]
 	for npc in npc_list:
 		if npc in lower_desc:
-			params["npcs"].append({"type": npc, "count": 1})
+			var rnd_type = npc_types_pool[randi() % npc_types_pool.size()]
+			params["npcs"].append({"type": rnd_type, "name": "Житель", "count": 1})
 	
 	# 6. Парсим выходы
 	if "дверь" in lower_desc or "выход" in lower_desc or "проход" in lower_desc or "троп" in lower_desc:
