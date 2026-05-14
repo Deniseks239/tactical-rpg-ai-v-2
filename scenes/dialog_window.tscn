@@ -1,28 +1,35 @@
 [gd_scene format=3 uid="uid://cwpyrd2s6qoct"]
 
-[ext_resource type="Script" uid="uid://j5it036hkiuk" path="res://scripts/ui/dialog_window.gd" id="1_scqs2"]
+[ext_resource type="Script" uid="uid://j5it036hkiuk" path="res://scripts/ui/dialog_window.gd" id="1_dialog_script"]
 
-[node name="DialogWindow" type="Control" unique_id=1202786911]
+[node name="DialogWindow" type="Control" unique_id=1440209335]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = -577.0
+offset_top = -327.0
+offset_right = -577.0
+offset_bottom = -327.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_scqs2")
+script = ExtResource("1_dialog_script")
 
-[node name="Фон" type="Panel" parent="." unique_id=415342867]
-custom_minimum_size = Vector2(600, 400)
+[node name="Panel" type="Panel" parent="." unique_id=629180321]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -300.0
+offset_right = 400.0
+offset_bottom = 300.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Фон" unique_id=1136052374]
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel" unique_id=959130212]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -30,18 +37,29 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="История" type="ScrollContainer" parent="Фон/VBoxContainer" unique_id=171846048]
+[node name="ScrollContainer" type="ScrollContainer" parent="Panel/VBoxContainer" unique_id=1154123140]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HistoryLabel" type="RichTextLabel" parent="Panel/VBoxContainer/ScrollContainer" unique_id=118309713]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_following = true
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/VBoxContainer" unique_id=1251571871]
 layout_mode = 2
 
-[node name="HistoryLabel" type="RichTextLabel" parent="Фон/VBoxContainer/История" unique_id=795864726]
+[node name="InputField" type="LineEdit" parent="Panel/VBoxContainer/HBoxContainer" unique_id=2027617478]
 layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Ваше сообщение..."
 
-[node name="Ввод" type="HBoxContainer" parent="Фон/VBoxContainer" unique_id=1447348330]
-layout_mode = 2
-
-[node name="InputField" type="LineEdit" parent="Фон/VBoxContainer/Ввод" unique_id=618005968]
-layout_mode = 2
-
-[node name="SendButton" type="Button" parent="Фон/VBoxContainer/Ввод" unique_id=251286431]
+[node name="SendButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer" unique_id=962571018]
 layout_mode = 2
 text = "Сказать"
+
+[node name="CloseButton" type="Button" parent="Panel/VBoxContainer/HBoxContainer" unique_id=706228873]
+layout_mode = 2
+text = "Закрыть"
