@@ -1082,7 +1082,7 @@ func _start_llama_server():
 			print("GameController: запускаю llama-server асинхронно...")
 			
 			var output = []
-			var pid = OS.create_process(exe_path, ["-m", model_path, "--n-gpu-layers", "99", "--ctx-size", "4096", "--port", "8080"], true)
+			var pid = OS.create_process(exe_path, ["-m", model_path, "--n-gpu-layers", "99", "--ctx-size", "4096", "--port", "8080","--reasoning off"], true)
 			if pid > 0:
 				llama_process_id = pid
 				print("GameController: llama-server запущен (PID: ", pid, "), ожидаю готовности...")
