@@ -127,3 +127,12 @@ static func get_generic_npc_prompt(npc_name: String, npc_gender: String, locatio
 Игрок %s обратился к тебе.
 Ответь одной короткой репликой на русском (1-2 предложения) от лица персонажа.
 Не пиши "Thinking Process" или "Drafting". Сразу напиши готовую реплику.""" % [npc_name, npc_gender, location_description, player_name]
+
+static func get_generic_npc_prompt_with_memory(npc_name: String, npc_gender: String, location_description: String, player_name: String, history_text: String, player_message: String) -> String:
+	var base = """Ты — NPC %s (%s). Локация: %s.
+Игрок %s обратился к тебе.""" % [npc_name, npc_gender, location_description, player_name]
+	if history_text != "":
+		base += "\n\nИстория вашего разговора:\n" + history_text + "\nПродолжи диалог."
+	else:
+		base += "\nОтветь коротко (1-2 предложения) на русском от лица персонажа."
+	return base
