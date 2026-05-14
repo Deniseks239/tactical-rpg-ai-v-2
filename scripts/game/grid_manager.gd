@@ -999,6 +999,14 @@ func send_dialogue_message(message: String, npc_name: String):
 		_talk_to_generic_npc_with_message(npc_name, message)
 
 func _talk_to_generic_npc_with_message(npc_name: String, message: String):
+	var type_info = CharacterClasses.get_npc_type_info(npc_type)
+	var personality = type_info["personality"]
+	var max_mem = type_info["max_memory"]
+	# Обрезаем память в соответствии с типом
+	var recent_memory = memory.slice(max(0, memory.size() - max_mem), memory.size())
+	var history_text = ""
+	for entry in recent_memory:
+		history_text += "%s: %s\n" % [entry["speaker"], entry["text"]]
 	var location_mgr = get_node("/root/LocationManagerAuto")
 	var location_desc = "неизвестная местность"
 	if location_mgr and location_mgr.current_location:
@@ -1015,7 +1023,6 @@ func _talk_to_generic_npc_with_message(npc_name: String, message: String):
 		npc_memory[npc_name] = []
 	var memory = npc_memory[npc_name]
 	
-	var history_text = ""
 	for entry in memory:
 		history_text += "%s: %s\n" % [entry["speaker"], entry["text"]]
 	
