@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://cwpyrd2s6qoct"]
+
+[node name="DialogWindow" type="Control" unique_id=1202786911]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="." unique_id=415342867]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HistoryLabel" type="RichTextLabel" parent="Panel" unique_id=795864726]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="InputField" type="LineEdit" parent="Panel" unique_id=618005968]
+layout_mode = 0
+offset_right = 68.5
+offset_bottom = 31.0
+
+[node name="SendButton" type="Button" parent="Panel" unique_id=251286431]
+layout_mode = 0
+offset_right = 8.0
+offset_bottom = 8.0
+text = "Сказать"
