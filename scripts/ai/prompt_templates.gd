@@ -123,7 +123,9 @@ static func get_story_intro_prompt(characters: Array) -> String:
 Пиши сразу текст, без разделителей и заголовков.
 """ % chars_desc
 static func get_generic_npc_prompt(npc_name: String, npc_gender: String, location_description: String, player_name: String, player_message: String) -> String:
-	return """Ты — NPC по имени %s (%s). Ты находишься в локации: %s.
+	# Специальный маркер для отключения thinking в Gemma 4
+	var disable_thinking = "<|end_of_text|><|start_of_response|>"
+	return """%sТы — NPC по имени %s (%s). Ты находишься в локации: %s.
 К тебе обратился игрок %s.
 Твоя задача — дать короткий ответ от лица этого персонажа (1-3 предложения на русском).
-Не используй JSON. Не размышляй вслух. Отвечай сразу.""" % [npc_name, npc_gender, location_description, player_name]
+Не используй JSON. Не размышляй вслух. Отвечай сразу.""" % [disable_thinking, npc_name, npc_gender, location_description, player_name]
