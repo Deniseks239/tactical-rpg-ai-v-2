@@ -109,25 +109,25 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 	var message = response["choices"][0]["message"]
 	var content = message.get("content", "")
 	# Если content пуст, но есть reasoning_content, извлекаем финальную реплику
-	if content == "" and message.has("reasoning_content"):
-		var reasoning = message["reasoning_content"]
+	#if content == "" and message.has("reasoning_content"):
+		#var reasoning = message["reasoning_content"]
 		# Ищем русский текст после последнего "Final Output Generation" или "Draft Response"
-		var markers = ["Final Output Generation (Russian):", "Final Output Generation:", "Draft Response (Internal Check):"]
-		for marker in markers:
-			var pos = reasoning.find(marker)
-			if pos != -1:
-				content = reasoning.substr(pos + marker.length()).strip_edges()
-				break
+		#var markers = ["Final Output Generation (Russian):", "Final Output Generation:", "Draft Response (Internal Check):"]
+		#for marker in markers:
+			#var pos = reasoning.find(marker)
+			#if pos != -1:
+				#content = reasoning.substr(pos + marker.length()).strip_edges()
+				#break
 		# Если маркеры не найдены, берём последнюю непустую строку
-		if content == "":
-			var lines = reasoning.split("\n")
-			for i in range(lines.size() - 1, -1, -1):
-				var line = lines[i].strip_edges()
-				if line != "" and not line.begins_with("*") and not line.begins_with("Thinking"):
-					content = line
-					break
-		if content != "":
-			print("AIClient: Извлечён ответ из reasoning_content: ", content.substr(0, 100))
+		#if content == "":
+			#var lines = reasoning.split("\n")
+			#for i in range(lines.size() - 1, -1, -1):
+				#var line = lines[i].strip_edges()
+				#if line != "" and not line.begins_with("*") and not line.begins_with("Thinking"):
+					#content = line
+					#break
+		#if content != "":
+			#print("AIClient: Извлечён ответ из reasoning_content: ", content.substr(0, 100))
 	# Если всё равно пусто — ошибка
 	if content == "":
 		print("AIClient: Пустой ответ от модели, возможно, все токены ушли на thinking")
