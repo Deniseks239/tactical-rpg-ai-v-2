@@ -842,6 +842,16 @@ func _talk_to_unit(unit_data: Dictionary):
 	var pos = grid_state.get_unit_position(unit_data["id"])
 	var pos_key = str(pos.x) + "_" + str(pos.y)
 	var npc_id = ""
+	var player_pos = grid_state.get_unit_position("player_1")
+	var npc_pos = grid_state.get_unit_position(unit_data["id"])
+	var distance = max(abs(player_pos.x - npc_pos.x), abs(player_pos.y - npc_pos.y))
+	if distance > 1:
+		var target_cell = _find_free_adjacent_cell(npc_pos.x, npc_pos.y)
+		if target_cell != Vector2i(-1, -1):
+			grid_state.remove_unit("player_1")
+			grid_state.set_unit("player_1", game_controller.current_player_name, "player", target_cell.x, target_cell.y)
+			refresh_grid()
+			_update_highlight()
 	if grid_state.units.has(pos_key) and grid_state.units[pos_key].has("npc_id"):
 		npc_id = grid_state.units[pos_key]["npc_id"]
 	
