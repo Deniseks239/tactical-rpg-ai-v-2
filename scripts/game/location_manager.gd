@@ -202,7 +202,24 @@ func get_or_create_location(location_id: String, description: String = "", addit
 			"target_location_id": ""
 		})
 		print("LocationManager: добавлен выход вперёд на (", door_pos.x, ",", door_pos.y, ")")
-	
+	# Назначаем npc_type для всех NPC, у которых его нет
+	for npc_data in params.get("npcs", []):
+		if not npc_data.has("npc_type"):
+			if npc_data.has("type"):
+				npc_data["npc_type"] = npc_data["type"]
+			elif npc_data.has("role"):
+				# Пытаемся определить тип по роли
+				var role = npc_data["role"].to_lower()
+				if "торговец" in role or "трактирщик" in role:
+					npc_data["npc_type"] = "trader"
+				elif "страж" in role or "охран" in role:
+					npc_data["npc_type"] = "guard"
+				elif "ребёнок" in role or "дитя" in role:
+					npc_data["npc_type"] = "child"
+				else:
+					npc_data["npc_type"] = "commoner"
+			else:
+				npc_data["npc_type"] = "commoner"
 	var location = LocationData.new()
 	location.id = location_id
 	location.name = params.get("location_name", "Неизвестная локация")
@@ -350,6 +367,8 @@ func _apply_location_to_game(location: LocationData, entry_door_pos: Vector2i = 
 			# Сохраняем npc_id, чтобы диалог мог найти его в кампании
 			if npc.has("npc_id") and game_controller.grid_state.units.has(pos_key):
 				game_controller.grid_state.units[pos_key]["npc_id"] = npc["npc_id"]
+			if npc.has("npc_type") and game_controller.grid_state.units.has(pos_key):
+				game_controller.grid_state.units[pos_key]["npc_type"] = npc["npc_type"]
 func _update_door_targets_from_campaign(location: LocationData):
 	var campaign_mgr = _get_campaign_manager()
 	if not campaign_mgr or not campaign_mgr.has_campaign():
