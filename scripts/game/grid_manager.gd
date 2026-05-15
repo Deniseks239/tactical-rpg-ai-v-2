@@ -1011,7 +1011,7 @@ func _talk_to_generic_npc_with_message(npc_name: String, message: String):
 	else:
 		gender = "мужской"
 	
-	# Определяем тип NPC
+	# Ищем тип NPC по его имени в grid_state
 	var npc_type = "commoner"
 	for pos_key in grid_state.units:
 		var unit = grid_state.units[pos_key]
@@ -1019,23 +1019,46 @@ func _talk_to_generic_npc_with_message(npc_name: String, message: String):
 			npc_type = unit["npc_type"]
 			break
 	
-	var type_info = CharacterClasses.get_npc_type_info(npc_type)
+	var type_info = NPC_TYPE_INFO.get(npc_type, NPC_TYPE_INFO["commoner"])
 	var personality = type_info["personality"]
-	var max_mem = type_info["max_memory"]
+	var max_memory = type_info["max_memory"]
 	
+	# Загружаем память и обрезаем её согласно типу
 	if not npc_memory.has(npc_name):
 		npc_memory[npc_name] = []
 	var memory = npc_memory[npc_name]
+	var recent_memory = memory.slice(max(0, memory.size() - max_memory), memory.size())
 	
 	var history_text = ""
-	if memory.size() > 0:
-		var recent_memory = memory.slice(max(0, memory.size() - max_mem), memory.size())
-		for entry in recent_memory:
-			history_text += "%s: %s\n" % [entry["speaker"], entry["text"]]
+	for entry in recent_memory:
+		history_text += "%s: %s\n" % [entry["speaker"], entry["text"]]
 	
-	var prompt = PromptTemplatesAuto.get_generic_npc_prompt_with_memory(
-		npc_name, gender, location_desc, player_name, history_text, message, npc_type
+	var knowledge = str(type_info["knowledge"])
+	var prompt = PromptTemplatesAuto.get_generic_npc_prompt_with_type(
+		npc_name, gender, location_desc, player_name, history_text, message, personality, knowledge
 	)
 	game_controller.ai_client.send_request([{"role": "user", "content": prompt}], {}, {}, "dialogue")
 	game_controller.ai_client.response_received.connect(_on_generic_npc_response.bind(npc_name), CONNECT_ONE_SHOT)
 	game_controller.game_message.emit("*Вы обращаетесь к " + npc_name + "*")
+const NPC_TYPE_INFO = {
+	"commoner": {
+		"personality": "обычный житель, немного напуганный",
+		"knowledge": ["местные слухи", "где находится таверна"],
+		"max_memory": 2
+	},
+	"guard": {
+		"personality": "суровый стражник порядка",
+		"knowledge": ["правила города", "преступления в округе"],
+		"max_memory": 3
+	},
+	"trader": {
+		"personality": "хитрый торговец, ищущий выгоду",
+		"knowledge": ["цены на товары", "где достать редкие вещи"],
+		"max_memory": 4
+	},
+	"child": {
+		"personality": "любопытный ребёнок",
+		"knowledge": ["сплетни", "где можно спрятаться"],
+		"max_memory": 1
+	}
+}
