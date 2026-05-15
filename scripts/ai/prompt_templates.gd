@@ -138,3 +138,13 @@ static func get_generic_npc_prompt_with_memory(npc_name: String, npc_gender: Str
 	base += "Твои знания: " + str(type_info["knowledge"]) + ". Если спросят о другом, вежливо откажись отвечать.\n"
 	base += "Ответь коротко (1-2 предложения) на русском от лица персонажа."
 	return base
+
+static func get_generic_npc_prompt_with_type(npc_name: String, npc_gender: String, location_description: String, player_name: String, history_text: String, player_message: String, personality: String, knowledge: String) -> String:
+	var base = """Ты — NPC %s (%s). Локация: %s. Твой характер: %s.
+Твои знания: %s. Если спросят о чём-то другом, вежливо скажи, что не знаешь.
+Игрок %s обратился к тебе: "%s".
+""" % [npc_name, npc_gender, location_description, personality, knowledge, player_name, player_message]
+	if history_text != "":
+		base += "\nПредыдущие реплики:\n" + history_text + "\n"
+	base += "Ответь коротко (1-2 предложения) на русском от лица персонажа."
+	return base
