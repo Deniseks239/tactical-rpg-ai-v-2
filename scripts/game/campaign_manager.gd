@@ -57,6 +57,8 @@ func _on_campaign_response(response: Dictionary):
 	
 	# Извлекаем JSON
 	var json_str = _extract_json(text)
+	# Исправляем неэкранированные кавычки внутри JSON
+	json_str = _fix_json_quotes(json_str)
 	if json_str.is_empty():
 		# Пробуем исправить обрезанный JSON
 		json_str = _fix_truncated_json(text)
@@ -319,3 +321,42 @@ func _generate_save_name() -> String:
 	# Заменяем двоеточия и пробелы, чтобы получился корректный путь
 	var safe_name = dt.replace(":", "-").replace("T", "_")
 	return "save_" + safe_name
+
+func _fix_json_quotes(content: String) -> String:
+	# Исправляем неэкранированные двойные кавычки внутри JSON-строк
+	var result = ""
+	var in_string = false
+	var escape = false
+	var i = 0
+	while i < content.length():
+		var c = content[i]
+		if escape:
+			escape = false
+			result += c
+			i += 1
+			continue
+		if c == '\\':
+			escape = true
+			result += c
+			i += 1
+			continue
+		if c == '"':
+			if in_string:
+				# Проверяем, не конец ли строки
+				var next_char = ""
+				if i + 1 < content.length():
+					next_char = content[i + 1]
+				# Конец строки, если после кавычки идёт запятая, двоеточие, пробел, скобка или контент закончился
+				if next_char in [',', ':', '', ' ', '\n', '\r', '}', ']']:
+					in_string = false
+					result += c
+				else:
+					# Неэкранированная кавычка внутри строки — заменяем на одинарную
+					result += "'"
+			else:
+				in_string = true
+				result += c
+		else:
+			result += c
+		i += 1
+	return result
