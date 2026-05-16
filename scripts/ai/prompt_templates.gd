@@ -101,6 +101,7 @@ static func get_campaign_structure_prompt(story_intro: String, character_name: S
 - Каждый NPC должен знать что-то о главном квесте или предлагать побочный квест.
 - ВСЕ тексты на русском языке.
 - Ответь ТОЛЬКО JSON'ом, без дополнительного текста.
+- НЕ ИСПОЛЬЗУЙ двойные кавычки внутри строк. Заменяй их на одинарные кавычки или пиши без кавычек.
 """ % [story_intro, character_name]
 static func get_story_intro_prompt(characters: Array) -> String:
 	var chars_desc = ""
