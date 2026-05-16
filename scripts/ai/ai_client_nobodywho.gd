@@ -153,7 +153,8 @@ func _on_request_completed(_result: int, response_code: int, _headers: PackedStr
 		print("Обычный текст, не JSON")
 		response_received.emit({"type": "text", "data": content})
 		return
-
+	# Пытаемся исправить неэкранированные кавычки
+	content = _fix_json_quotes(content)
 	# Пробуем распарсить JSON
 	var parsed = JSON.parse_string(content)
 	if parsed == null:
@@ -187,6 +188,45 @@ func cancel_current_request():
 		current_request.cancel_request()
 		current_request.queue_free()
 		current_request = null
+
+func _fix_json_quotes(content: String) -> String:
+	# Исправляем неэкранированные двойные кавычки внутри JSON-строк
+	var result = ""
+	var in_string = false
+	var escape = false
+	var i = 0
+	while i < content.length():
+		var c = content[i]
+		if escape:
+			escape = false
+			result += c
+			i += 1
+			continue
+		if c == '\\':
+			escape = true
+			result += c
+			i += 1
+			continue
+		if c == '"':
+			if in_string:
+				# Проверяем, не конец ли строки
+				var next_char = ""
+				if i + 1 < content.length():
+					next_char = content[i + 1]
+				# Конец строки, если после кавычки идёт запятая, двоеточие, пробел, скобка или контент закончился
+				if next_char in [',', ':', '', ' ', '\n', '\r', '}', ']']:
+					in_string = false
+					result += c
+				else:
+					# Неэкранированная кавычка внутри строки — заменяем на одинарную
+					result += "'"
+			else:
+				in_string = true
+				result += c
+		else:
+			result += c
+		i += 1
+	return result
 
 func _fix_incomplete_json(content: String) -> String:
 	var result = content
