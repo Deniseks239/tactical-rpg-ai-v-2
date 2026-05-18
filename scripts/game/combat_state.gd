@@ -9,6 +9,7 @@ var initiative_order: Array = []
 var current_turn_index: int = 0
 var action_points: int = 3
 var units: Dictionary = {}  # unit_id -> данные
+signal enemy_killed(enemy_name: String)
 
 func enter_combat():
 	mode = GameMode.COMBAT
