@@ -1,14 +1,23 @@
-# scripts/test_scene.gd
 extends Node2D
 
 var game_controller: GameController
 var grid_state: GridState
 var combat_state: CombatState
+var grid_manager: GridManager
 
 func _ready():
 	game_controller = get_node("/root/GameControllerAuto")
 	grid_state = game_controller.grid_state
 	combat_state = game_controller.combat_state
+	
+	# Создаём GridManager и добавляем его на сцену
+	grid_manager = GridManager.new()
+	add_child(grid_manager)
+	
+	# Добавляем камеру, чтобы контекстное меню работало
+	var camera = Camera2D.new()
+	add_child(camera)
+	camera.make_current()
 	
 	# Заполняем сетку тестовыми данными
 	_setup_test_grid()
@@ -21,12 +30,14 @@ func _ready():
 	
 	# Спавним предмет
 	_spawn_test_item()
+	
+	# Отрисовываем сетку
+	grid_manager.refresh_grid()
 
 func _setup_test_grid():
 	grid_state.width = 8
 	grid_state.height = 8
 	grid_state.initialize()
-	# Заполним полом и поставим игрока
 	for x in range(8):
 		for y in range(8):
 			grid_state.tiles[x][y]["type"] = GridState.TileType.FLOOR
@@ -36,8 +47,7 @@ func _spawn_test_npc():
 	grid_state.set_unit("npc_test", "Тестовый Житель", "npc", 2, 2)
 	var pos_key = "2_2"
 	grid_state.units[pos_key]["npc_id"] = "npc_test_1"
-	grid_state.units[pos_key]["npc_type"] = "guard"  # тип для диалога
-	# Регистрируем в кампании (чтобы диалог работал)
+	grid_state.units[pos_key]["npc_type"] = "guard"
 	var campaign_mgr = get_node_or_null("/root/CampaignManagerAuto")
 	if campaign_mgr:
 		if not campaign_mgr.campaign_data.has("npcs"):
@@ -52,9 +62,6 @@ func _spawn_test_npc():
 				{
 					"title": "Тестовый квест",
 					"description": "Убей тестового врага",
-					"objective_type": "kill_enemy",
-					"objective_target": "тестовый враг",
-					"target_count": 1,
 					"reward": "100 золота"
 				}
 			]
@@ -72,6 +79,5 @@ func _spawn_test_enemy():
 	})
 
 func _spawn_test_item():
-	# Просто ставим сундук на карте
 	grid_state.objects["3_3"] = {"type": "chest", "name": "Сундук"}
 	grid_state.tiles[3][3]["type"] = GridState.TileType.CHEST
