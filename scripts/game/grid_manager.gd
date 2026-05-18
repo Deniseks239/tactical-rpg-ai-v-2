@@ -384,6 +384,7 @@ func _attack(attacker_id: String, defender_id: String):
 			print("Враг убит, удаляем: ", defender["name"])
 			var killed_name = defender["name"]
 			grid_state.remove_unit(defender_id)
+			combat_state.enemy_killed.emit(killed_name)
 			combat_state.remove_unit(defender_id)
 			refresh_grid()
 			game_controller.game_message.emit(killed_name + " повержен!")
