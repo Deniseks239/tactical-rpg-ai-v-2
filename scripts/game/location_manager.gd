@@ -6,6 +6,7 @@ var locations: Dictionary = {}  # id -> LocationData
 # Словарь для карты мира: ключ - location_id, значение - { "tiles": [], "doors": {}, "connections": [] }
 var world_map_data: Dictionary = {}
 const LocationParser = preload("res://scripts/game/location_parser.gd")
+signal location_entered(location_id: String)
 
 func _ready():
 	# Получаем путь сохранения от менеджера кампании
@@ -358,6 +359,7 @@ func _apply_location_to_game(location: LocationData, entry_door_pos: Vector2i = 
 		
 		# Обновляем сетку
 		game_controller._refresh_grid()
+		location_entered.emit(location.id)
 		
 		# Добавляем NPC как юнитов (не врагов)
 		for npc in location.npcs:
