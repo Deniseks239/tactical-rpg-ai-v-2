@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bqkngc160jtpj" path="res://scenes/main_menu.gd" id="1_l6cm7"]
 
-[node name="MainMenu" type="Control" unique_id=336166975 node_paths=PackedStringArray("new_game_button", "load_button", "quit_button", "status_label", "settings_button")]
+[node name="MainMenu" type="Control" unique_id=336166975 node_paths=PackedStringArray("new_game_button", "load_button", "quit_button", "status_label", "test_button")]
 layout_mode = 3
 anchors_preset = 0
 offset_right = 40.0
@@ -12,7 +12,7 @@ new_game_button = NodePath("Panel/VBoxContainer/NewGameButton")
 load_button = NodePath("Panel/VBoxContainer/LoadButton")
 quit_button = NodePath("Panel/VBoxContainer/QuitButton")
 status_label = NodePath("Panel/VBoxContainer/StatusLabel")
-settings_button = NodePath("Panel/VBoxContainer/SettingsButton")
+test_button = NodePath("Panel/VBoxContainer/TestButton")
 
 [node name="Panel" type="Panel" parent="." unique_id=1596602184]
 layout_mode = 0
@@ -55,3 +55,7 @@ text = "Настройки"
 custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
 text = "Выход"
+
+[node name="TestButton" type="Button" parent="Panel/VBoxContainer" unique_id=1381015524]
+layout_mode = 2
+text = "Тест"
