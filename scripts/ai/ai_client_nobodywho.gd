@@ -190,7 +190,6 @@ func cancel_current_request():
 		current_request = null
 
 func _fix_json_quotes(content: String) -> String:
-	# Исправляем неэкранированные двойные кавычки внутри JSON-строк
 	var result = ""
 	var in_string = false
 	var escape = false
@@ -226,6 +225,11 @@ func _fix_json_quotes(content: String) -> String:
 		else:
 			result += c
 		i += 1
+	
+	# Если осталась незакрытая строка — закрываем её
+	if in_string:
+		result += '"'
+	
 	return result
 
 func _fix_incomplete_json(content: String) -> String:
