@@ -15,9 +15,22 @@ func _ready():
 	add_child(grid_manager)
 	
 	# Добавляем камеру, чтобы контекстное меню работало
+	# Добавляем камеру с правильным масштабом и позицией
 	var camera = Camera2D.new()
 	add_child(camera)
 	camera.make_current()
+	
+	# Настраиваем масштаб как в основной игре
+	var viewport_size = get_viewport().get_visible_rect().size
+	var map_width = grid_state.width * grid_state.cell_size
+	var map_height = grid_state.height * grid_state.cell_size
+	var zoom_x = viewport_size.x / map_width
+	var zoom_y = viewport_size.y / map_height
+	var zoom = min(zoom_x, zoom_y) * 0.9
+	camera.zoom = Vector2(zoom, zoom)
+	
+	# Центрируем камеру на карте
+	camera.global_position = Vector2(map_width / 2, map_height / 2)
 	
 	# Заполняем сетку тестовыми данными
 	_setup_test_grid()
