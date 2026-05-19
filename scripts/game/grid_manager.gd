@@ -991,6 +991,39 @@ func send_dialogue_message(message: String, npc_name: String):
 			npc_id = unit["npc_id"]
 			break
 	
+	# Проверяем, не просит ли игрок квест
+	var msg_lower = message.to_lower()
+	if "квест" in msg_lower or "помощь" in msg_lower or "работа" in msg_lower or "задание" in msg_lower:
+		if campaign_mgr and npc_id != "":
+			# Сюжетный NPC
+			var npc_info = campaign_mgr.get_npc(npc_id)
+			if not npc_info.is_empty():
+				for quest in npc_info.get("quests", []):
+					var quest_id = quest.get("title", "").hash() as String
+					if not QuestTrackerAuto.is_quest_active(quest_id) and not QuestTrackerAuto.is_quest_completed(quest_id):
+						QuestTrackerAuto.accept_quest(
+							quest_id,
+							quest.get("title", "Квест"),
+							quest.get("description", ""),
+							quest.get("objective_type", "kill_enemy"),
+							quest.get("objective_target", "unknown"),
+							1,
+							quest.get("reward", "награда")
+						)
+						if dialog_window and dialog_window.visible:
+							dialog_window.append_npc_response("У меня есть для тебя задание: " + quest.get("title", "") + ". " + quest.get("description", ""))
+						else:
+							game_controller.game_message.emit(npc_name + ": У меня есть для тебя задание: " + quest.get("title", ""))
+						return
+		else:
+			# Обычный житель — просто отвечает, что ничего нет
+			if dialog_window and dialog_window.visible:
+				dialog_window.append_npc_response("У меня нет заданий, но будь осторожен в этих краях.")
+			else:
+				game_controller.game_message.emit(npc_name + ": У меня нет заданий, но будь осторожен в этих краях.")
+			return
+	
+	# Если не просили квест — продолжаем обычный диалог
 	if campaign_mgr and npc_id != "":
 		# Сюжетный NPC
 		campaign_mgr.npc_dialogue_received.connect(_on_npc_dialogue_received.bind(npc_name), CONNECT_ONE_SHOT)
