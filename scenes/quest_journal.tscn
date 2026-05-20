@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://b4867cfdlmqej"]
+
+[node name="QuestJournal" type="Node" unique_id=11544904]
+
+[node name="Фон" type="Panel" parent="." unique_id=825971749]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Фон" unique_id=133419867]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="Журнал квестов" type="Label" parent="Фон/VBoxContainer" unique_id=236173445]
+layout_mode = 2
+
+[node name="QuestListLabel" type="RichTextLabel" parent="Фон/VBoxContainer" unique_id=1511751976]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="Фон/VBoxContainer" unique_id=1611282254]
+layout_mode = 2
+text = "Закрыть"
