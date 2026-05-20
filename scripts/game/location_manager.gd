@@ -133,8 +133,8 @@ func get_or_create_location(location_id: String, description: String = "", addit
 			var all_npcs = campaign_mgr.campaign_data.get("npcs", [])
 			for npc in all_npcs:
 				# Ищем свободную клетку для NPC
-				var nx = randi_range(1, params.get("width", 8) - 2)
-				var ny = randi_range(1, params.get("height", 8) - 2)
+				var nx = clampi(randi_range(1, params.get("width", 8) - 2), 0, params.get("width", 8) - 1)
+				var ny = clampi(randi_range(1, params.get("height", 8) - 2), 0, params.get("height", 8) - 1)
 				params["npcs"].append({
 					"name": npc.get("name", "NPC"),
 					"role": npc.get("role", ""),
@@ -157,6 +157,45 @@ func get_or_create_location(location_id: String, description: String = "", addit
 					"target_location_id": next_id
 				}
 				params["exits"].append(exit_data)
+			var map_width = params.get("width", 8)
+			var map_height = params.get("height", 8)
+			# Гарантированно добавляем дверь вперёд, если её ещё нет
+			var has_forward = false
+			for e in params.get("exits", []):
+				if e.get("target_location_id", "") == "":
+					has_forward = true
+					break
+	
+			if not has_forward:
+				var door_pos = _get_random_door_position(map_width, map_height, params.get("location_type", "default"))
+				params["exits"].append({
+					"x": door_pos.x,
+					"y": door_pos.y,
+					"description": "Тёмный проход вперёд",
+					"target_location_id": ""
+				})
+				print("LocationManager: гарантированно добавлен выход вперёд на (", door_pos.x, ",", door_pos.y, ")")
+	
+			# Если нет ни одной двери вперёд – добавляем
+			if has_forward == 0:
+				var back_x = -1
+				var back_y = -1
+				if params.get("exits", []).size() > 0:
+					var back_door = params["exits"][-1]
+					back_x = back_door.get("x", -1)
+					back_y = back_door.get("y", -1)
+		
+				var door_pos = _get_random_door_position(map_width, map_height, params.get("location_type", "default"))
+				while door_pos.x == back_x and door_pos.y == back_y:
+					door_pos = _get_random_door_position(map_width, map_height, params.get("location_type", "default"))
+		
+				params["exits"].append({
+					"x": door_pos.x,
+					"y": door_pos.y,
+					"description": "Тёмный проход вперёд",
+					"target_location_id": ""
+				})
+				print("LocationManager: добавлен выход вперёд на (", door_pos.x, ",", door_pos.y, ")")
 				print("LocationManager: Добавлен сюжетный выход в ", next_id)
 	
 	# Добавляем обратный выход
